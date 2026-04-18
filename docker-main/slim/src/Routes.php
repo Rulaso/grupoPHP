@@ -9,5 +9,6 @@ $app->post('/logout', [LoginController::class ,'logout']);
 //create
 $app->post('/users', [UserController::class,'create']);
 
+
 //editar nombre/password
 $app->put('/user/{user_id}', [UserController::class , 'editar']);
