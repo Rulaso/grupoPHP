@@ -49,8 +49,8 @@ class userController
             $db->query("INSERT INTO users (email, password, name, balance, is_admin) 
         VALUES ('$email', '$password', '$name', 1000, 0)");
             $id = $db->lastInsertId();
-            User::crearToken($id, $db);
-            $ok = ["status" => "OK", "message" => "Usuario creado"];
+            $token = User::crearToken($id, $db);
+            $ok = ["status" => "OK", "message" => "Usuario creado", "token" => $token];
             $response->getBody()->write(json_encode($ok));
             $db =  null;
             return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
