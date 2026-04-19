@@ -41,27 +41,23 @@ class User {
 
 
     //Verifico si el usuario esta logueado
-    public static function estaLogueado($id, $db){
-        //recupero el token y su expiracion de la base de datos a un array 
-        $datos = $db->query("SELECT token, token_expired_at FROM users WHERE id = '$id'")->fetch(PDO::FETCH_ASSOC);
+    public static function estaLogueado($token, $db){
+        //Verifico si el token existe en la db, y traigo la id de ese token.
+        $datos = $db->query("SELECT id, token_expired_at FROM users WHERE token = '$token'")->fetch(PDO::FETCH_ASSOC);
 
-        //saco los datos del array y los guardo en variables
-        if($datos){
-            $token = ($datos['token'] ?? '');
-            $tokenExpire = ($datos['token_expired_at'] ?? '');
-            $tiempoActual = date('Y-m-d H:i:s');
-        } else {
+        if(!$datos){
             return false;
-        }
-
-        //Si encontro token y no paso su tiempo de expiracion, actualiza el token y devuelve true
-        if($token && $tokenExpire > $tiempoActual){
+        } 
+        $id = $datos['id'];
+        $tokenExpire = $datos['token_expired_at'];
+        $tiempoActual = date('Y-m-d H:i:s');
+        //Si todavia no expiro..
+        if($tokenExpire > $tiempoActual){
             self::updateToken($id, $db);
             return true;
-
-        //Si no encontro hay token o el mismo esta vencido, borra el token de la base de datos y retorna false
-        }else{
-            self::deleteToken($id, $db);
+        }
+        else{
+            self::deleteToken($id,$db);
             return false;
         }
     }

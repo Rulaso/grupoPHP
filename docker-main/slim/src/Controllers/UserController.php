@@ -50,7 +50,7 @@ class userController
         VALUES ('$email', '$password', '$name', 1000, 0)");
             $id = $db->lastInsertId();
             $token = User::crearToken($id, $db);
-            $ok = ["status" => "OK", "message" => "Usuario creado", "token" => $token];
+            $ok = ["status" => "OK", "message" => "Usuario creado", "token" => $token, "id" => $id];
             $response->getBody()->write(json_encode($ok));
             $db =  null;
             return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
@@ -140,5 +140,52 @@ class userController
             }
         }
 
+    }
+    public function getProfile(Request $request, Response $response, array $args)
+    {
+        //Recupero el id que viene por url
+        $userId = $args['user_id'];
+        //Recupero el token e id del body
+        $datosBody = $request -> getParsedBody();
+        $tokenBody = $datosBody['token'] ?? '';
+        //Si {user_id} no es un numero o esta vacio
+        if(!is_numeric($userId)){
+            $error = ["status" => "Bad Request", "message" => "Id invalido"];
+            $response->getBody()->write(json_encode($error));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        }
+        //Si no me logee
+        else if(empty($tokenBody)){
+            $error = ["status" => "Bad Request", "message" => "No se inicio sesion"];
+            $response->getBody()->write(json_encode($error));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        }
+        else{
+            $db = DB::getConnection();
+            // Verifico que no supero los 5 mins sin actividad
+            if(User::estaLogueado($tokenBody, $db)){
+                $datos = User::obtenerUsuarioPorToken($tokenBody,$db);
+                $id = $datos['id'];
+                $admin = $datos['is_admin'];
+                //Todo ok
+                if($admin || $id == $userId){
+                    $userData = $db->query("SELECT name, balance FROM users WHERE id = '$userId'");
+                    $portFolio = $db->query("SELECT quantity FROM portfolio WHERE user_id = '$userId'");
+                    $ok = ["status" => "OK", "user" => $userData, "portfolio" => $portFolio];
+                    $response->getBody()->write(json_encode($ok));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+                }
+                else{
+                    $error = ["status" => "Bad Request", "message" => "No tiene permisos"];
+                    $response->getBody()->write(json_encode($error));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+                }
+            }
+            else{
+                $error = ["status" => "Bad Request", "message" => 'Su sesion caducó'];
+                $response->getBody()->write(json_encode($error));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+            }
+        }
     }
 }
