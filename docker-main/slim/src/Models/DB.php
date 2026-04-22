@@ -20,4 +20,8 @@ class DB {
 
         return self::$connection;
     }
+
+    public static function closeConnection(&$db){
+        $db = null;
+    }
 }

@@ -42,7 +42,7 @@ class userController
             if ($dato) {
                 $error = ["status" => "Bad request", "message" => "El email ya se encuentra en uso"];
                 $response->getBody()->write(json_encode($error));
-                $db =  null;
+                DB::closeConnection($db);
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
             }
             // Guardo los datos.
@@ -52,7 +52,7 @@ class userController
             $token = User::crearToken($id, $db);
             $ok = ["status" => "OK", "message" => "Usuario creado", "token" => $token, "id" => $id];
             $response->getBody()->write(json_encode($ok));
-            $db =  null;
+            DB::closeConnection($db);
             return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
         }
     }
@@ -84,6 +84,7 @@ class userController
             } else {
                 $error = ["status"=> "Bad request", "message"=> "El usuario debe estar logueado"];
                 $response->getBody()->write(json_encode($error));
+                DB::closeConnection($db);
                 return $response->withHeader("Content-Type", "application/json")->withStatus(400);
             }
 
@@ -93,13 +94,14 @@ class userController
                 if(!User::estaLogueado($editorID, $db)){
                     $error = ["status"=> "Bad request", "message"=> "El usuario debe estar logueado para realizar modificaciones"];
                     $response->getBody()->write(json_encode($error));
+                    DB::closeConnection($db);
                     return $response->withHeader("Content-Type", "application/json")->withStatus(400);
                 }
                 //verifico que sea admin o el mismo usuario
                 if(!$admin && $editorID != $modificarID) {
                     $error = ["status"=> "Bad request", "message"=> "No cuenta con los permisos para realizar esta accion"];
                     $response->getBody()->write(json_encode($error));
-                    $db = null;
+                    DB::closeConnection($db);
                     return $response->withHeader("Content-Type", "application/json")->withStatus(400);
                 }
 
@@ -114,7 +116,7 @@ class userController
                         || !preg_match('/[0-9]/', $password) || !preg_match('/[\W]/', $password)) {
                     $error = ["status" => "Bad request", "message" => "La nueva contraseña no cumple los requisitos"];
                     $response->getBody()->write(json_encode($error));
-                    $db = null;
+                    DB::closeConnection($db);
                     return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
                     }  else {
                         $db->query("UPDATE users SET password = '$password' WHERE id = '$modificarID'");
@@ -128,7 +130,7 @@ class userController
                 //Envio el mensaje de 200 OK
                 $mensaje = ["status"=> "OK", "message"=> "Los datos fueron actualizados"];
                 $response->getBody()->write(json_encode($mensaje));
-                $db = null;
+                DB::closeConnection($db);
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 
 
@@ -136,6 +138,7 @@ class userController
                 //Si el usuario que solicita la edicion no existe dentro de la base de datos, retorno un error 400
                 $error = ["status"=> "Bad request", "message"=> "El id de usuario no correponde con ninguno dentro de la base de datos"];
                 $response->getBody()->write(json_encode($error));
+                DB::closeConnection($db);
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
             }
         }
@@ -145,9 +148,9 @@ class userController
     {
         //Recupero el id que viene por url
         $userId = $args['user_id'];
-        //Recupero el token del body
-        $datosBody = $request -> getParsedBody();
-        $tokenBody = $datosBody['token'] ?? '';
+        //Recupero el token del header
+        $authHeader = $request->getHeaderLine('Authorization');
+        $token = trim(str_replace('Bearer', '', $authHeader));
         //Si {user_id} no es un numero o esta vacio
         if(!is_numeric($userId)){
             $error = ["status" => "Bad Request", "message" => "Id invalido"];
@@ -155,7 +158,7 @@ class userController
             return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
         }
         //Si no me logee
-        else if(empty($tokenBody)){
+        else if(empty($token)){
             $error = ["status" => "Bad Request", "message" => "No se inicio sesion"];
             $response->getBody()->write(json_encode($error));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
@@ -163,8 +166,8 @@ class userController
         else{
             $db = DB::getConnection();
             // Verifico que no supero los 5 mins sin actividad
-            if(User::estaLogueado($tokenBody, $db)){
-                $datos = User::obtenerUsuarioPorToken($tokenBody,$db);
+            if(User::estaLogueado($token, $db)){
+                $datos = User::obtenerUsuarioPorToken($token,$db);
                 $id = $datos['id'];
                 $admin = $datos['is_admin'];
                 //Todo ok
@@ -176,31 +179,35 @@ class userController
                     //Uso where pq solo estoy buscando las de esa id en especifico.
                     //Los agrupo por id para que cada usuario tenga un único resultado y poder calcular correctamente el total del portfolio con SUM, para que no queden los datos separados.
                     //fetch es para que me devuelva solo uno, y me convierte ese objeto en un array.
-                    $userData = $db->query("SELECT u.name, u.balance, COALESCE(SUM(p.quantity), 0) AS total FROM users u 
-                    LEFT JOIN portfolio p ON u.id = p.user_id WHERE u.id = '$userId' GROUP BY u.id")->fetch(PDO::FETCH_ASSOC);
+                    $userData = $db->query("SELECT u.name, u.balance, COALESCE(SUM(p.quantity*a.current_price), 0) AS total FROM users u 
+                    LEFT JOIN portfolio p ON u.id = p.user_id 
+                    LEFT JOIN assets a ON p.asset_id = a.id WHERE u.id = '$userId' GROUP BY u.id")->fetch(PDO::FETCH_ASSOC);
                     $ok = ["status" => "OK", "user" => $userData];
                     $response->getBody()->write(json_encode($ok));
+                    DB::closeConnection($db);
                     return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
                 }
                 else{
                     $error = ["status" => "Bad Request", "message" => "No tiene permisos"];
                     $response->getBody()->write(json_encode($error));
+                    DB::closeConnection($db);
                     return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
                 }
             }
             else{
                 $error = ["status" => "Bad Request", "message" => 'Su sesion caducó'];
                 $response->getBody()->write(json_encode($error));
+                DB::closeConnection($db);
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
             }
         }
     }
 
-    public function getUsers(Request $request, Response $response, array $args){
-        //Recupero el token del body
-        $datosBody = $request -> getParsedBody();
-        $tokenBody = $datosBody['token'] ?? '';
-        if(empty($tokenBody)){
+    public function getUsers(Request $request, Response $response){
+        //Recupero el token del header
+        $authHeader = $request->getHeaderLine('Authorization');
+        $token = trim(str_replace('Bearer', '', $authHeader));
+        if(empty($token)){
             $error = ["status" => "Bad Request", "message" => "No se inicio sesion"];
             $response->getBody()->write(json_encode($error));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
@@ -208,26 +215,30 @@ class userController
         else{
             $db = DB::getConnection();
             // Verifico que no supero los 5 mins sin actividad
-            if(User::estaLogueado($tokenBody, $db)){
-                $datos = User::obtenerUsuarioPorToken($tokenBody,$db);
+            if(User::estaLogueado($token, $db)){
+                $datos = User::obtenerUsuarioPorToken($token,$db);
                 $admin = $datos['is_admin'];
                 if($admin){
                     //Traigo los datos de la db y calculo el total
-                    $datosUser = $db->query("SELECT u.name, u.balance, COALESCE(SUM(p.quantity),0) AS total FROM users u
-                        LEFT JOIN portfolio p ON u.id = p.user_id GROUP BY u.id")->fetchAll(PDO::FETCH_ASSOC);    // COALESCE                 
+                    $datosUser = $db->query("SELECT u.name, COALESCE(SUM(p.quantity*a.current_price),0) AS total FROM users u
+                        LEFT JOIN portfolio p ON u.id = p.user_id 
+                        LEFT JOIN assets a ON p.asset_id = a.id GROUP BY u.id")->fetchAll(PDO::FETCH_ASSOC);    // COALESCE                 
                     $ok = ["status" => "OK", "data" => $datosUser];
                     $response->getBody()->write(json_encode($ok));
+                    DB::closeConnection($db);
                     return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
                 }
                 else{
                     $error = ["status" => "Bad Request", "message" => "No tiene permisos"];
                     $response->getBody()->write(json_encode($error));
+                    DB::closeConnection($db);
                     return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
                 }
             }
             else{
                 $error = ["status" => "Bad Request", "message" => 'Su sesion caducó'];
                 $response->getBody()->write(json_encode($error));
+                DB::closeConnection($db);
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
             }
         }
