@@ -68,49 +68,52 @@ class userController
         } else {
             //abro la base de datos
             $db = DB::getConnection();
-                $editorID = $request->getAttribute('userID');
-                $datos = User::obtenerDatosDelUsuarioPorID($editorID, $db);
-                if($datos){
-                    $admin = ($datos['is_admin']);
-                } else {
-                    $admin = 0;
-                }
-                
-                //verifico que sea admin o el mismo usuario
-                if($admin == 0 && $editorID != $modificarID) {
-                    $error = ["status"=> "Bad request", "message"=> "No cuenta con los permisos para realizar esta accion"];
-                    $response->getBody()->write(json_encode($error));
-                    DB::closeConnection($db);
-                    return $response->withHeader("Content-Type", "application/json")->withStatus(400);
-                }
-
-                //recupero la nueva contraseña y el nuevo nombre del body
-                $datos = $request->getParsedBody();
-                $password = ($datos['password'] ?? '');
-                $name = ($datos['name'] ?? '');
-
-                //en el caso de que se haya enviado contraseña, verifico que esta sea valida
-                if($password){
-                    if ( strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) 
-                        || !preg_match('/[0-9]/', $password) || !preg_match('/[\W]/', $password)) {
-                    $error = ["status" => "Bad request", "message" => "La nueva contraseña no cumple los requisitos"];
-                    $response->getBody()->write(json_encode($error));
-                    DB::closeConnection($db);
-                    return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
-                    }  else {
-                        $db->query("UPDATE users SET password = '$password' WHERE id = '$modificarID'");
-                    }
-                }
-                //Si se envio un nombre, lo actualizo en la base de datos
-                if($name){
-                    $db->query("UPDATE users SET name = '$name' WHERE id = '$modificarID'");
-                }
-
-                //Envio el mensaje de 200 OK
-                $mensaje = ["status"=> "OK", "message"=> "Los datos fueron actualizados"];
-                $response->getBody()->write(json_encode($mensaje));
+            $editorID = $request->getAttribute('userID');
+            $datos = User::obtenerDatosDelUsuarioPorID($editorID, $db);
+            if($datos){
+                $admin = ($datos['is_admin']);
+            } else {
+                $admin = 0;
+            }
+            //verifico que sea admin o el mismo usuario
+            if($admin == 0 && $editorID != $modificarID) {
+                $error = ["status"=> "Bad request", "message"=> "No cuenta con los permisos para realizar esta accion"];
+                $response->getBody()->write(json_encode($error));
                 DB::closeConnection($db);
-                return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+                return $response->withHeader("Content-Type", "application/json")->withStatus(400);
+            }
+
+            //recupero la nueva contraseña y el nuevo nombre del body
+            $datos = $request->getParsedBody();
+            $password = ($datos['password'] ?? '');
+            $name = ($datos['name'] ?? '');
+
+            //en el caso de que se haya enviado contraseña, verifico que esta sea valida
+            if($password){
+                if ( strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) 
+                || !preg_match('/[0-9]/', $password) || !preg_match('/[\W]/', $password)) {
+                $error = ["status" => "Bad request", "message" => "La nueva contraseña no cumple los requisitos"];
+                $response->getBody()->write(json_encode($error));
+                DB::closeConnection($db);
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+                }  else {
+                    $db->query("UPDATE users SET password = '$password' WHERE id = '$modificarID'");
+                }
+            }
+            //Si se envio un nombre, lo actualizo en la base de datos
+            if(empty($name) || !preg_match('/^[a-zA-Z]+$/', $name)){
+                $error = ['status'=> 'Bad request', 'message'=> 'El nombre ingresado no es valido'];
+                $response->getBody()->write(json_encode($error));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            } else {
+
+            }
+            $db->query("UPDATE users SET name = '$name' WHERE id = '$modificarID'");
+            //Envio el mensaje de 200 OK
+            $mensaje = ["status"=> "OK", "message"=> "Los datos fueron actualizados"];
+            $response->getBody()->write(json_encode($mensaje));
+            DB::closeConnection($db);
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
         }
     }
 

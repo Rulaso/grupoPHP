@@ -38,30 +38,6 @@ class User {
         public static function deleteToken($id, $db){
         $db->query("UPDATE users SET token = NULL, token_expired_at = NULL WHERE id = '$id'");
     }
-
-
-    //Verifico si el usuario esta logueado
-    /*public static function estaLogueado($token, $db){
-        //Verifico si el token existe en la db, y traigo la id de ese token.
-        $datos = $db->query("SELECT id, token_expired_at FROM users WHERE token = '$token'")->fetch(PDO::FETCH_ASSOC);
-
-        if(!$datos){
-            return false;
-        } 
-        $id = $datos['id'];
-        $tokenExpire = $datos['token_expired_at'];
-        $tiempoActual = date('Y-m-d H:i:s');
-        //Si todavia no expiro..
-        if($tokenExpire > $tiempoActual){
-            self::updateToken($id, $db);
-            return true;
-        }
-        else{
-            self::deleteToken($id,$db);
-            return false;
-        }
-    }*/
-
     //recibo un token y devuelvo el id del usuario y si el mismo es admin
     public static function obtenerUsuarioPorToken($token, $db){
         $datos = $db->query("SELECT id, is_admin FROM users WHERE token = '$token'");
@@ -72,7 +48,7 @@ class User {
     //FUNCION DE PRUEBA PARA EL NUEVO MIDDLEWARE DE AUTHTOKEN
     //recupero si el usuario es admin o no
     public static function obtenerDatosDelUsuarioPorID($id, $db){
-        $datos = $db->query("SELECT is_admin FROM users WHERE 'id' = $id");
+        $datos = $db->query("SELECT is_admin FROM users WHERE id = $id");
         return $datos->fetch(PDO::FETCH_ASSOC);
     }
 }

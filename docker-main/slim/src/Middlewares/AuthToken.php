@@ -15,7 +15,7 @@ class AuthToken{
         $id = self::estaLogueado($token, $db);
         //Si esta logueado, continuo con la ejecucion y envio el id del usuario que envio el token 
         if($id != null){
-            return $handler->handle($request->withAttribute('userID', $id));
+            return $handler->handle($request->withAttribute('userID', $id, 'db', $db));
         } else {
             //Si no esta logueado creo el objeto response y envio la respuesta a postman 
             $response = new \Slim\Psr7\Response();
