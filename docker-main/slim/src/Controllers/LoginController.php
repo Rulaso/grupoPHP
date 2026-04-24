@@ -32,13 +32,13 @@ public function login(Request $request, Response $response, array $args){
 
             $cumple = ["status" => "200 OK", "message" => "Se completo existosamente el login", "token" => $token, "id" => $id];    //<-creo el mensaje
             $response->getBody()->write(json_encode($cumple)); 
-            $db =  null; 
+            DB::closeConnection($db);
             return $response->withHeader("Content-Type", "application/json")->withStatus(200);      //<-envio el json con el OK
         } else {
             //Si no cumplen con un usuario existente envio un Bad request
             $error = ["Status" => "400 Bad request", "message" => "El email o contraseña no coinciden con un usuario existente"];       //<-creo el mensaje
             $response->getBody()->write(json_encode($error));       
-            $db =  null;
+            DB::closeConnection($db);
             return $response->withHeader("Content-Type", "application/json")->withStatus(400);      //<-envio el json con el Bad request
         }
     }
@@ -61,7 +61,7 @@ public function logout(Request $request, Response $response){
         //devuelvo codigo 200
         $exito = ["status" => "200 OK", "message"=> "Se deslogueo correctamente"];
         $response->getBody()->write(json_encode($exito));
-        $db =  null;
+        DB::closeConnection($db);
         return $response->withHeader("Content-Type", "application/json")->withStatus(200);
         }
 }

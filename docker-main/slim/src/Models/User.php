@@ -41,7 +41,7 @@ class User {
 
 
     //Verifico si el usuario esta logueado
-    public static function estaLogueado($token, $db){
+    /*public static function estaLogueado($token, $db){
         //Verifico si el token existe en la db, y traigo la id de ese token.
         $datos = $db->query("SELECT id, token_expired_at FROM users WHERE token = '$token'")->fetch(PDO::FETCH_ASSOC);
 
@@ -60,11 +60,19 @@ class User {
             self::deleteToken($id,$db);
             return false;
         }
-    }
+    }*/
 
     //recibo un token y devuelvo el id del usuario y si el mismo es admin
     public static function obtenerUsuarioPorToken($token, $db){
         $datos = $db->query("SELECT id, is_admin FROM users WHERE token = '$token'");
+        return $datos->fetch(PDO::FETCH_ASSOC);
+    }
+
+
+    //FUNCION DE PRUEBA PARA EL NUEVO MIDDLEWARE DE AUTHTOKEN
+    //recupero si el usuario es admin o no
+    public static function obtenerDatosDelUsuarioPorID($id, $db){
+        $datos = $db->query("SELECT is_admin FROM users WHERE 'id' = $id");
         return $datos->fetch(PDO::FETCH_ASSOC);
     }
 }

@@ -47,7 +47,7 @@ class userController
             }
             // Guardo los datos.
             $db->query("INSERT INTO users (email, password, name, balance, is_admin) 
-        VALUES ('$email', '$password', '$name', 1000, 0)");
+            VALUES ('$email', '$password', '$name', 1000, 0)");
             $id = $db->lastInsertId();
             $token = User::crearToken($id, $db);
             $ok = ["status" => "OK", "message" => "Usuario creado", "token" => $token, "id" => $id];
@@ -68,37 +68,16 @@ class userController
         } else {
             //abro la base de datos
             $db = DB::getConnection();
-            //recupero el token desde el header
-            $authHeader = $request->getHeaderLine('Authorization');
-            $token = trim(str_replace('Bearer', '', $authHeader));
-
-            //verifico que se haya enviado token y que este corresponda a un usuario
-            if($token) {
-                $datos = User::obtenerUsuarioPorToken($token, $db);
-                if($datos) {
-                    $editorID = ($datos['id'] ?? '');
+                $editorID = $request->getAttribute('userID');
+                $datos = User::obtenerDatosDelUsuarioPorID($editorID, $db);
+                if($datos){
                     $admin = ($datos['is_admin']);
                 } else {
-                    $editorID = null;
+                    $admin = 0;
                 }
-            } else {
-                $error = ["status"=> "Bad request", "message"=> "El usuario debe estar logueado"];
-                $response->getBody()->write(json_encode($error));
-                DB::closeConnection($db);
-                return $response->withHeader("Content-Type", "application/json")->withStatus(400);
-            }
-
-            //verifico que el id enviado exista dentro de la base de datos
-            if($editorID){
-                //Verifico que el usuario este logueado 
-                if(!User::estaLogueado($editorID, $db)){
-                    $error = ["status"=> "Bad request", "message"=> "El usuario debe estar logueado para realizar modificaciones"];
-                    $response->getBody()->write(json_encode($error));
-                    DB::closeConnection($db);
-                    return $response->withHeader("Content-Type", "application/json")->withStatus(400);
-                }
+                
                 //verifico que sea admin o el mismo usuario
-                if(!$admin && $editorID != $modificarID) {
+                if($admin == 0 && $editorID != $modificarID) {
                     $error = ["status"=> "Bad request", "message"=> "No cuenta con los permisos para realizar esta accion"];
                     $response->getBody()->write(json_encode($error));
                     DB::closeConnection($db);
@@ -132,15 +111,6 @@ class userController
                 $response->getBody()->write(json_encode($mensaje));
                 DB::closeConnection($db);
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
-
-
-            } else {
-                //Si el usuario que solicita la edicion no existe dentro de la base de datos, retorno un error 400
-                $error = ["status"=> "Bad request", "message"=> "El id de usuario no correponde con ninguno dentro de la base de datos"];
-                $response->getBody()->write(json_encode($error));
-                DB::closeConnection($db);
-                return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
-            }
         }
     }
 
