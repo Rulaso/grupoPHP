@@ -46,8 +46,7 @@ class User {
 
     //recupero si el usuario es admin o no
     public static function esAdmin($id, $db){
-        $datos = $db->query("SELECT is_admin FROM users WHERE 'id' = $id");
-        $admin = $datos['is_admin'];
-        return $admin;
+        $datos = $db->query("SELECT is_admin FROM users WHERE id = $id") ->fetch(PDO::FETCH_ASSOC);
+        return $datos ['is_admin'];
     }
 }
