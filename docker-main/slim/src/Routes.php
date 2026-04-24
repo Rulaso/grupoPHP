@@ -12,4 +12,10 @@ $app->post('/users', [UserController::class,'create']);
 
 
 //editar nombre/password
-$app->put('/user/{user_id}', [UserController::class , 'editar'])->add(AuthToken::class);
+$app->put('/users/{user_id}', [UserController::class , 'editar'])->add(AuthToken::class);
+
+//devuelve los datos mi perfil o siendo admin de UN perfil en especifico
+$app->get('/users/{user_id}', [UserController::class, 'getProfile'])->add(AuthToken::class);
+
+//SOLO ADMIN, lista los inversores actuales
+$app->get('/users', [UserController::class, 'getUsers'])->add(AuthToken::class);

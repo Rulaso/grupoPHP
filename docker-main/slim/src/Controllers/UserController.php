@@ -67,14 +67,9 @@ class userController
             return $response->withHeader("Content-Type", "application/json")->withStatus(400);
         } else {
             //abro la base de datos
-            $db = DB::getConnection();
             $editorID = $request->getAttribute('userID');
-            $datos = User::obtenerDatosDelUsuarioPorID($editorID, $db);
-            if($datos){
-                $admin = ($datos['is_admin']);
-            } else {
-                $admin = 0;
-            }
+            $db = $request->getAttribute('db');
+            $admin = User::esAdmin($editorID, $db); 
             //verifico que sea admin o el mismo usuario
             if($admin == 0 && $editorID != $modificarID) {
                 $error = ["status"=> "Bad request", "message"=> "No cuenta con los permisos para realizar esta accion"];
@@ -130,8 +125,8 @@ class userController
         else{
             $id = $request->getAttribute('userID');
             $db = $request->getAttribute('db');
-               
-            if(User::esAdmin($id, $db) || $id == $userId){
+            $admin = User::esAdmin($id, $db)
+            if($admin || $id == $userId){
                 //Calculo el total del portfolio usando SUM(quantity).
                 //Como busco por usuario, SUM puede no tener registros y me devuelve null, por lo que uso COALESCE para que me envie un 0 en vez de null.
                 //La tabla principal es users y uno la tabla de portfolio usando la id de user y user_id de portfolio. 
