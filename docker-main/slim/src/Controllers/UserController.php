@@ -118,54 +118,34 @@ class userController
     {
         //Recupero el id que viene por url
         $userId = $args['user_id'];
-        //Recupero el token del header
-        $authHeader = $request->getHeaderLine('Authorization');
-        $token = trim(str_replace('Bearer', '', $authHeader));
         //Si {user_id} no es un numero o esta vacio
         if(!is_numeric($userId)){
             $error = ["status" => "Bad Request", "message" => "Id invalido"];
             $response->getBody()->write(json_encode($error));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
         }
-        //Si no me logee
-        else if(empty($token)){
-            $error = ["status" => "Bad Request", "message" => "No se inicio sesion"];
-            $response->getBody()->write(json_encode($error));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
-        }
         else{
-            $db = DB::getConnection();
-            // Verifico que no supero los 5 mins sin actividad
-            if(User::estaLogueado($token, $db)){
-                $datos = User::obtenerUsuarioPorToken($token,$db);
-                $id = $datos['id'];
-                $admin = $datos['is_admin'];
-                //Todo ok
-                if($admin || $id == $userId){
-                    //Calculo el total del portfolio usando SUM(quantity).
-                    //Como busco por usuario, SUM puede no tener registros y me devuelve null, por lo que uso COALESCE para que me envie un 0 en vez de null.
-                    //La tabla principal es users y uno la tabla de portfolio usando la id de user y user_id de portfolio. 
-                    //Uso left join para traerme todos los usuarios aunque no tenga portfolio(que seria 0).
-                    //Uso where pq solo estoy buscando las de esa id en especifico.
-                    //Los agrupo por id para que cada usuario tenga un único resultado y poder calcular correctamente el total del portfolio con SUM, para que no queden los datos separados.
-                    //fetch es para que me devuelva solo uno, y me convierte ese objeto en un array.
-                    $userData = $db->query("SELECT u.name, u.balance, COALESCE(SUM(p.quantity*a.current_price), 0) AS total FROM users u 
-                    LEFT JOIN portfolio p ON u.id = p.user_id 
-                    LEFT JOIN assets a ON p.asset_id = a.id WHERE u.id = '$userId' GROUP BY u.id")->fetch(PDO::FETCH_ASSOC);
-                    $ok = ["status" => "OK", "user" => $userData];
-                    $response->getBody()->write(json_encode($ok));
-                    DB::closeConnection($db);
-                    return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
-                }
-                else{
-                    $error = ["status" => "Bad Request", "message" => "No tiene permisos"];
-                    $response->getBody()->write(json_encode($error));
-                    DB::closeConnection($db);
-                    return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
-                }
+            $id = $request->getAttribute('userID');
+            $db = $request->getAttribute('db');
+               
+            if(User::esAdmin($id, $db) || $id == $userId){
+                //Calculo el total del portfolio usando SUM(quantity).
+                //Como busco por usuario, SUM puede no tener registros y me devuelve null, por lo que uso COALESCE para que me envie un 0 en vez de null.
+                //La tabla principal es users y uno la tabla de portfolio usando la id de user y user_id de portfolio. 
+                //Uso left join para traerme todos los usuarios aunque no tenga portfolio(que seria 0).
+                //Uso where pq solo estoy buscando las de esa id en especifico.
+                //Los agrupo por id para que cada usuario tenga un único resultado y poder calcular correctamente el total del portfolio con SUM, para que no queden los datos separados.
+                //fetch es para que me devuelva solo uno, y me convierte ese objeto en un array.
+                $userData = $db->query("SELECT u.name, u.balance, COALESCE(SUM(p.quantity*a.current_price), 0) AS total FROM users u 
+                LEFT JOIN portfolio p ON u.id = p.user_id 
+                LEFT JOIN assets a ON p.asset_id = a.id WHERE u.id = '$userId' GROUP BY u.id")->fetch(PDO::FETCH_ASSOC);
+                $ok = ["status" => "OK", "user" => $userData];
+                $response->getBody()->write(json_encode($ok));
+                DB::closeConnection($db);
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
             }
             else{
-                $error = ["status" => "Bad Request", "message" => 'Su sesion caducó'];
+                $error = ["status" => "Bad Request", "message" => "No tiene permisos"];
                 $response->getBody()->write(json_encode($error));
                 DB::closeConnection($db);
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
@@ -174,43 +154,23 @@ class userController
     }
 
     public function getUsers(Request $request, Response $response){
-        //Recupero el token del header
-        $authHeader = $request->getHeaderLine('Authorization');
-        $token = trim(str_replace('Bearer', '', $authHeader));
-        if(empty($token)){
-            $error = ["status" => "Bad Request", "message" => "No se inicio sesion"];
-            $response->getBody()->write(json_encode($error));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        $id = $request->getAttribute('userID');
+        $db = $request->getAttribute('db');    
+        if(User::esAdmin($id, $db)){
+        //Traigo los datos de la db y calculo el total
+            $datosUser = $db->query("SELECT u.name, COALESCE(SUM(p.quantity*a.current_price),0) AS total FROM users u
+            LEFT JOIN portfolio p ON u.id = p.user_id 
+            LEFT JOIN assets a ON p.asset_id = a.id GROUP BY u.id")->fetchAll(PDO::FETCH_ASSOC);    // COALESCE                 
+            $ok = ["status" => "OK", "data" => $datosUser];
+            $response->getBody()->write(json_encode($ok));
+            DB::closeConnection($db);
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
         }
         else{
-            $db = DB::getConnection();
-            // Verifico que no supero los 5 mins sin actividad
-            if(User::estaLogueado($token, $db)){
-                $datos = User::obtenerUsuarioPorToken($token,$db);
-                $admin = $datos['is_admin'];
-                if($admin){
-                    //Traigo los datos de la db y calculo el total
-                    $datosUser = $db->query("SELECT u.name, COALESCE(SUM(p.quantity*a.current_price),0) AS total FROM users u
-                        LEFT JOIN portfolio p ON u.id = p.user_id 
-                        LEFT JOIN assets a ON p.asset_id = a.id GROUP BY u.id")->fetchAll(PDO::FETCH_ASSOC);    // COALESCE                 
-                    $ok = ["status" => "OK", "data" => $datosUser];
-                    $response->getBody()->write(json_encode($ok));
-                    DB::closeConnection($db);
-                    return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
-                }
-                else{
-                    $error = ["status" => "Bad Request", "message" => "No tiene permisos"];
-                    $response->getBody()->write(json_encode($error));
-                    DB::closeConnection($db);
-                    return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
-                }
-            }
-            else{
-                $error = ["status" => "Bad Request", "message" => 'Su sesion caducó'];
-                $response->getBody()->write(json_encode($error));
-                DB::closeConnection($db);
-                return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
-            }
+            $error = ["status" => "Bad Request", "message" => "No tiene permisos"];
+            $response->getBody()->write(json_encode($error));
+            DB::closeConnection($db);
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
         }
     }
 }

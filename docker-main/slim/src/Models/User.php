@@ -71,7 +71,7 @@ class User {
 
     //FUNCION DE PRUEBA PARA EL NUEVO MIDDLEWARE DE AUTHTOKEN
     //recupero si el usuario es admin o no
-    public static function obtenerDatosDelUsuarioPorID($id, $db){
+    public static function esAdmin($id, $db){
         $datos = $db->query("SELECT is_admin FROM users WHERE 'id' = $id");
         return $datos->fetch(PDO::FETCH_ASSOC);
     }
