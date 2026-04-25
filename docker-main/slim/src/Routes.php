@@ -3,6 +3,7 @@
 require_once __DIR__ . '/Controllers/LoginController.php';
 require_once __DIR__ . '/Controllers/UserController.php';
 require_once __DIR__ . '/Middlewares/AuthToken.php';
+require_once __DIR__ . '/Controllers/AssetController.php';
 //login
 $app->post('/login', [LoginController::class ,'login']);
 //logout
@@ -19,3 +20,6 @@ $app->get('/users/{user_id}', [UserController::class, 'getProfile'])->add(AuthTo
 
 //SOLO ADMIN, lista los inversores actuales
 $app->get('/users', [UserController::class, 'getUsers'])->add(AuthToken::class);
+
+//SOLO ADMIN, actualizo los valores de los assets
+$app->put('/assets', [AssetController::class, 'actualizarValores'])->add(AuthToken::class);
