@@ -55,7 +55,4 @@ class AssetController{
         $delta = $direccion * $volatilidadPorSegundo * $tiempoPasado;
         return $precioActual + $delta;
     }
-
-
-
 }
