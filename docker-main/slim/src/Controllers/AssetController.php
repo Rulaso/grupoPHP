@@ -56,6 +56,36 @@ class AssetController{
         return $precioActual + $delta;
     }
 
+    public function buscarAssets(Request $request, Response $response, array $args) {
+        //Recupero los datos como parametros
+        $datos = $request->getQueryParams();
+
+        //Le asigno a cada datos una variable independiente
+        $nombre = ($datos['type'] ?? null);
+        $min = ($datos['min_price'] ?? null);
+        $max = ($datos['max_price'] ?? null);
+
+        //abro la base de datos
+        $db = DB::getConnection();
+
+        //Efectuo la consulta 
+        $datos = Asset::buscarDinamico($nombre, $min, $max, $db);
+
+        //cierro la base de datos (se hace aca para no repetir en cada return)
+        DB::closeConnection($db);
+
+        //Si mi array de datos tiene contenido devuelvo un 200 OK junto con el array
+        if($datos){
+            $mensaje = ["Status"=>"OK","message"=>"Se encontraron los siguientes resultados", "datos"=>$datos];
+            $response->getBody()->write(json_encode($mensaje));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+        } else {
+        //Si mi array no contiene datos devuelvo un 400 Bad request indicando que los parametros de busqueda estan mal
+            $mensaje = ["Status"=>"Bad request","message"=>"No se encontraron resultados de busqueda"];
+            $response->getBody()->write(json_encode($mensaje));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        }
+    }
     public function activoPrecio(Request $request, Response $response, array $args){
         $assetId = ($args['asset_id'] ?? '');
         $quantity = ($args['quantity'] ?? '');

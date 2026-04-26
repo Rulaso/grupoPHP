@@ -26,3 +26,6 @@ $app->put('/assets', [AssetController::class, 'actualizarValores'])->add(AuthTok
 
 //Cambios de precio de un activo en especifico
 $app->get('/assets/{asset_id}/history/{quantity}', [AssetController::class, 'activoPrecio']);
+
+//NO REQUIERE LOGIN, segun los parametros de busqueda devuelve nombre y precio de los activos
+$app->get('/assets', [AssetController::class, 'buscarAssets']);
