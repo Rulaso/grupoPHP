@@ -23,3 +23,6 @@ $app->get('/users', [UserController::class, 'getUsers'])->add(AuthToken::class);
 
 //SOLO ADMIN, actualizo los valores de los assets
 $app->put('/assets', [AssetController::class, 'actualizarValores'])->add(AuthToken::class);
+
+//Cambios de precio de un activo en especifico
+$app->get('/assets/{asset_id}/history/{quantity}', [AssetController::class, 'activoPrecio']);
