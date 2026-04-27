@@ -27,6 +27,9 @@ class AssetController{
                 $tiempoActual = date('Y-m-d H:i:s');
                 //actualizo el asset en la db
                 Asset::actualizarAsset($assetID, $nuevoPrecio, $tiempoActual, $db);
+
+                $db->query("INSERT INTO transactions (user_id, asset_id, transaction_type, quantity, price_per_unit, total_amount, transaction_date)
+                            VALUES ($id, $assetID, 'buy', 0, $nuevoPrecio, 0, '$tiempoActual')");
             }
 
             //envio el mensaje indicando que ya actualice todos los assets
@@ -70,7 +73,6 @@ class AssetController{
 
         //Efectuo la consulta 
         $datos = Asset::buscarDinamico($nombre, $min, $max, $db);
-
         //cierro la base de datos (se hace aca para no repetir en cada return)
         DB::closeConnection($db);
 
