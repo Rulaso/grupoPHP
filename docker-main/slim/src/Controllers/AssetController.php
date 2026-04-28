@@ -91,19 +91,19 @@ class AssetController{
     public function activoPrecio(Request $request, Response $response, array $args){
         $assetId = ($args['asset_id'] ?? '');
         $quantity = ($args['quantity'] ?? '');
-        //Verifico que el asset y cantidad sean un numero positivo.
+        //Verifico asset
         if(!is_numeric($assetId) || $assetId <= 0){
             $error = ["status" => "Bad request", "message" => "asset_id debe ser un entero positivo"];
             $response->getBody()->write(json_encode($error));
             return $response->withHeader('Content-Type','application/json')->withStatus(400);
         }
-        else if(!is_numeric($quantity) || $quantity <= 0){
-            $error = ["status" => "Bad request", "message" => "La cantidad debe ser un entero positivo"];
+        //Verifico quantity
+        else if(!is_numeric($quantity) || $quantity <= 0 || $quantity > 5){
+            $error = ["status" => "Bad request", "message" => "La cantidad debe ser un entero positivo, maximo 5"];
             $response->getBody()->write(json_encode($error));
             return $response->withHeader('Content-Type','application/json')->withStatus(400);
         }
         else{
-            $limit = min((int)$quantity,5); //Busco el minimo entre la cantidad que manden y 5, ya que si ponen un numero mas alto que 5, devolveria solo 5 resultados.
             $db = DB::getConnection();
             //Verifico que exista el activo.
             $asset = $db->query("SELECT id FROM assets WHERE id = '$assetId'")->fetch(PDO::FETCH_ASSOC);
@@ -120,8 +120,8 @@ class AssetController{
             //Diferente del left join que me devolvia los datos de la tabla de usuarios aunque no tenga valores en el portfolio.
             //Uso el ON para conectr las tablas, WHERE para filtrar, y ORDEN BY para que me aparezcan las ultimas 5 o menos(dependiendo del valor quantity enviado por url).
                 $datos = $db->query("SELECT a.name, t.price_per_unit, t.transaction_date FROM transactions t 
-                INNER JOIN assets a ON t.asset_id = a.id WHERE t.asset_id = '$assetId'
-                ORDER BY t.transaction_date DESC LIMIT $limit")->fetchAll(PDO::FETCH_ASSOC);
+                INNER JOIN assets a ON t.asset_id = a.id WHERE t.asset_id = '$assetId' AND t.quantity = 0
+                ORDER BY t.transaction_date DESC LIMIT $quantity")->fetchAll(PDO::FETCH_ASSOC);
                 $ok = ["status" => "OK", "data" => $datos];
                 $response->getBody()->write(json_encode($ok));
                 DB::closeConnection($db);
