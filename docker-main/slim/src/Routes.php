@@ -33,3 +33,9 @@ $app->get('/assets', [AssetController::class, 'buscarAssets']);
 
 //REQUIERE LOGIN, devuelve el valor de los activos que posee el usuario segun su id
 $app->get('/portfolio', [PortfolioController::class, 'portfolioUsuario'])->add(AuthToken::class);
+
+//REQUIERE LOGIN, elimina un asset del portfolio
+$app->delete('/portfolio/{asset_id}', [PortfolioController::class,'eliminarElemento'])->add(AuthToken::class);
+
+//REQUIERE LOGIN, devuelve el historial de compras del usuario
+$app->get('/transactions', [PortfolioController::class, 'devolverTransacciones'])->add(AuthToken::class);
