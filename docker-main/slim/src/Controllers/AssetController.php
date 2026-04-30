@@ -83,7 +83,7 @@ class AssetController{
             return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
         } else {
         //Si mi array no contiene datos devuelvo un 400 Bad request indicando que los parametros de busqueda estan mal
-            $mensaje = ["Status"=>"Bad request","message"=>"No se encontraron resultados de busqueda"];
+            $mensaje = ["Status"=>"Bad request","message"=>"No se encontraron resultados de busqueda", "datos"=> $datos];
             $response->getBody()->write(json_encode($mensaje));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
         }

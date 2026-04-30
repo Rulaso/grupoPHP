@@ -4,6 +4,7 @@ require_once __DIR__ . '/Controllers/LoginController.php';
 require_once __DIR__ . '/Controllers/UserController.php';
 require_once __DIR__ . '/Middlewares/AuthToken.php';
 require_once __DIR__ . '/Controllers/AssetController.php';
+require_once __DIR__ . '/Controllers/PortfolioController.php';
 //login
 $app->post('/login', [LoginController::class ,'login']);
 //logout
@@ -29,3 +30,6 @@ $app->get('/assets/{asset_id}/history/{quantity}', [AssetController::class, 'act
 
 //NO REQUIERE LOGIN, segun los parametros de busqueda devuelve nombre y precio de los activos
 $app->get('/assets', [AssetController::class, 'buscarAssets']);
+
+//REQUIERE LOGIN, devuelve el valor de los activos que posee el usuario segun su id
+$app->get('/portfolio', [PortfolioController::class, 'portfolioUsuario'])->add(AuthToken::class);
