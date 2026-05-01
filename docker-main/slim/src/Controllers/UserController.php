@@ -58,17 +58,17 @@ class userController
     }
 
     public function editar(Request $request, Response $response, array $args){
+        $db = $request->getAttribute('db');
         //recupero el id que viene por url
         $modificarID = ($args['user_id'] ?? '');
         //verifico que haya enviado un id
         if(!$modificarID) {
             $error = ["status" => "Bad request", "message" => "No se reconoce como usuario"];
             $response->getBody()->write(json_encode($error));
+            DB::closeConnection($db);
             return $response->withHeader("Content-Type", "application/json")->withStatus(400);
         } else {
-            //abro la base de datos
             $editorID = $request->getAttribute('userID');
-            $db = $request->getAttribute('db');
 
             //verifico que sea admin o el mismo usuario
             if(!User::esAdmin($editorID, $db) && $editorID != $modificarID) {
@@ -115,17 +115,18 @@ class userController
 
     public function getProfile(Request $request, Response $response, array $args)
     {
+        $db = $request->getAttribute('db');
         //Recupero el id que viene por url
         $userId = $args['user_id'];
         //Si {user_id} no es un numero o esta vacio
         if(!is_numeric($userId)){
             $error = ["status" => "Bad Request", "message" => "Id invalido"];
             $response->getBody()->write(json_encode($error));
+            DB::closeConnection($db);
             return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
         }
         else{
             $id = $request->getAttribute('userID');
-            $db = $request->getAttribute('db');
             if(User::esAdmin($id, $db) || $id == $userId){
                 //Calculo el total del portfolio usando SUM(quantity).
                 //Como busco por usuario, SUM puede no tener registros y me devuelve null, por lo que uso COALESCE para que me envie un 0 en vez de null.

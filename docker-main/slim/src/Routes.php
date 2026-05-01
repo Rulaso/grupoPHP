@@ -39,3 +39,9 @@ $app->delete('/portfolio/{asset_id}', [PortfolioController::class,'eliminarEleme
 
 //REQUIERE LOGIN, devuelve el historial de compras del usuario
 $app->get('/transactions', [PortfolioController::class, 'devolverTransacciones'])->add(AuthToken::class);
+
+//REQUIERE LOGIN, realiza la compra de un activo
+$app->post('/trade/buy', [OperationController::class, 'comprarActivo'])->add(AuthToken::class);
+
+//REQUIERE LOGIN, realiza la venta de un activo
+$app->post('/trade/sell', [OperationController::class, 'venderActivo'])->add(AuthToken::class);
