@@ -39,10 +39,10 @@ class AssetController{
             return $response->withHeader('Content-Type', 'application/json')->withStatus(200);            
         } else {
             //envio el mensaje de error indicando que el usuario logueado no es admin
-            $error = ['status'=> 'Bad request', 'message'=> 'no tiene los permisos para realizar esta accion'];
+            $error = ['status'=> 'Unauthorized', 'message'=> 'no tiene los permisos para realizar esta accion'];
             $response->getBody()->write(json_encode($error));
             DB::closeConnection($db);
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
         }
     }
 
@@ -82,10 +82,10 @@ class AssetController{
             $response->getBody()->write(json_encode($mensaje));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
         } else {
-        //Si mi array no contiene datos devuelvo un 400 Bad request indicando que los parametros de busqueda estan mal
-            $mensaje = ["Status"=>"Bad request","message"=>"No se encontraron resultados de busqueda", "datos"=> $datos];
+        //Si mi array no contiene datos devuelvo un 404 Not Found indicando que los parametros de busqueda estan mal
+            $mensaje = ["Status"=>"Not found","message"=>"No se encontraron resultados de busqueda", "datos"=> $datos];
             $response->getBody()->write(json_encode($mensaje));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
         }
     }
     public function activoPrecio(Request $request, Response $response, array $args){

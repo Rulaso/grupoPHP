@@ -63,6 +63,6 @@ public function logout(Request $request, Response $response){
         $response->getBody()->write(json_encode($exito));
         DB::closeConnection($db);
         return $response->withHeader("Content-Type", "application/json")->withStatus(200);
-        }
+    }
 }
 }
