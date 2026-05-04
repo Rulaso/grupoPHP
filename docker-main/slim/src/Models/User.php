@@ -48,5 +48,22 @@ class User {
     public static function esAdmin($id, $db){
         $datos = $db->query("SELECT is_admin FROM users WHERE id = $id") ->fetch(PDO::FETCH_ASSOC);
         return $datos ['is_admin'];
+
     }
+
+    //recupero el tiempo de expiracion y el id usando el token
+    public static function obtenerTokenExpired($token, $db){
+         $datos = $db->query("SELECT id, token_expired_at FROM users WHERE token = '$token'")->fetch(PDO::FETCH_ASSOC);
+         return $datos;
+    }
+
+    //actualizo la contraseña 
+    public static function editarPassword($id, $password, $db){
+        $db->query("UPDATE users SET password = '$password' WHERE id = '$id'");
+    }
+    //actualizo el nombre
+    public static function editarName($id, $name, $db){
+        $db->query("UPDATE users SET name = '$name' WHERE id = '$id'");
+    }
+
 }

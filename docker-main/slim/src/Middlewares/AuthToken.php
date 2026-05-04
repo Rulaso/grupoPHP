@@ -27,9 +27,10 @@ class AuthToken{
         }
     }
 
+    //funcion encargada de verificar la fecha de expiracion del token
     public static function estaLogueado($token, $db){
-        //Verifico si el token existe en la db, y traigo la id de ese token.
-        $datos = $db->query("SELECT id, token_expired_at FROM users WHERE token = '$token'")->fetch(PDO::FETCH_ASSOC);
+        //Verifico si el token existe en la db, y traigo el id de ese token.
+        $datos = User::obtenerTokenExpired($token, $db);
 
         if(!$datos){
             return null;

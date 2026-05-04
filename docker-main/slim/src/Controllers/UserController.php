@@ -92,7 +92,7 @@ class userController
                 DB::closeConnection($db);
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
                 }  else {
-                    $db->query("UPDATE users SET password = '$password' WHERE id = '$modificarID'");
+                    User::editarPassword($modificarID, $password, $db);
                 }
             }
             //Si se envio un nombre, lo actualizo en la base de datos
@@ -104,7 +104,7 @@ class userController
             } else {
 
             }
-            $db->query("UPDATE users SET name = '$name' WHERE id = '$modificarID'");
+            User::editarName($modificarID, $name, $db);
             //Envio el mensaje de 200 OK
             $mensaje = ["status"=> "OK", "message"=> "Los datos fueron actualizados"];
             $response->getBody()->write(json_encode($mensaje));

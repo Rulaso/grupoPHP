@@ -4,6 +4,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 require_once __DIR__ . '/../Models/DB.php';
 require_once __DIR__ . "/../Models/Asset.php";
+require_once __DIR__ . "/../Models/Transaction.php";
 class AssetController{
     public function actualizarValores(Request $request, Response $response){
         //recupero el id y el db que me mando el middleware
@@ -28,8 +29,7 @@ class AssetController{
                 //actualizo el asset en la db
                 Asset::actualizarAsset($assetID, $nuevoPrecio, $tiempoActual, $db);
 
-                $db->query("INSERT INTO transactions (user_id, asset_id, transaction_type, quantity, price_per_unit, total_amount, transaction_date)
-                            VALUES ($id, $assetID, 'buy', 0, $nuevoPrecio, 0, '$tiempoActual')");
+                Transaction::insertarVariacion($id, $assetID, $nuevoPrecio, $tiempoActual, $db);
             }
 
             //envio el mensaje indicando que ya actualice todos los assets
@@ -46,6 +46,7 @@ class AssetController{
         }
     }
 
+    //funcion  encargada de cambiar el precio de las variables (funcion auxiliar para mejorar la legibilidad del codigo)
     private static function variarPrecioPorTiempo($precioActual, $timestampUltimaVez, $volatilidadPorSegundo = 0.05) {
         // 1. Calcular cuántos segundos han pasado
         $timestampUltimaVez = strtotime($timestampUltimaVez);
