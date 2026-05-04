@@ -6,7 +6,7 @@ class PortfolioController {
         //recupero los datos del middleware
         $userID = $request->getAttribute('userID');
         $db = $request->getAttribute('db');
-
+        
         //genero la consulta a la base de datos
         $datosPortfolio = $db->query("SELECT p.quantity, a.current_price, a.name, (p.quantity * a.current_price) AS total FROM portfolio p LEFT JOIN assets a ON a.id = p.asset_id 
                                     WHERE p.user_id = '$userID'")->fetchAll(PDO::FETCH_ASSOC);
@@ -19,9 +19,9 @@ class PortfolioController {
             return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
         } else {
             //Si la base no me trajo datos devuelvo un not found con un array vacio
-            $mensaje = ['Status'=> 'Not found', 'message'=> 'No se encontraron datos del usuario', 'datos'=> $datosPortfolio];
+            $mensaje = ['Status'=> 'OK ','message'=> 'No se encontraron datos del usuario', 'datos'=> $datosPortfolio];
             $response->getBody()->write(json_encode($mensaje));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
         }
     }
 
