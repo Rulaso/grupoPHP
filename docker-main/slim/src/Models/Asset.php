@@ -35,4 +35,9 @@ class Asset{
         return $datos;
     }
 
+    public static function obtenerCurrent_price($assetId, $db){
+        $datos = $db->query("SELECT current_price FROM assets WHERE id = '$assetId'")->fetch(PDO::FETCH_ASSOC);
+        return $datos;
+    }
+
 }

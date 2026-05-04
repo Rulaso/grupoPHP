@@ -65,5 +65,13 @@ class User {
     public static function editarName($id, $name, $db){
         $db->query("UPDATE users SET name = '$name' WHERE id = '$id'");
     }
-
+    
+    public static function obtenerBalance($id, $db){
+        $datos = $db->query("SELECT balance FROM users WHERE id = '$id'")->fetch(PDO::FETCH_ASSOC);
+        return $datos;
+    }
+    
+    public static function actualizarBalance($total, $id, $db){
+        $db->query("UPDATE users SET balance = balance - $total WHERE id = $id");
+    }
 }

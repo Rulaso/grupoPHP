@@ -4,6 +4,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 require_once __DIR__ . '/../Models/DB.php';
 require_once __DIR__ . '/../Models/Operation.php';
+require_once __DIR__ . '/../Helpers/OperationHelper.php';
 
 class OperationController{
 
@@ -14,7 +15,7 @@ class OperationController{
         $assetId = trim($datos['asset_id'] ?? '');
         $quantity = trim($datos['quantity'] ?? '');
         //Validaciones
-        $validacion = Operation::validarDatos($assetId,$quantity);
+        $validacion = OperationHelper::validarDatos($assetId,$quantity);
         if($validacion !== true){
             $error = ["status" => "Bad Request", "message" => $validacion];
             $response->getBody()->write(json_encode($error));
@@ -23,7 +24,7 @@ class OperationController{
         }
         else{
             $id = $request->getAttribute('userID');
-            $asset = $db->query("SELECT current_price FROM assets WHERE id = '$assetId'")->fetch(PDO::FETCH_ASSOC);
+            $asset = Asset::obtenerCurrent_price($assetId, $db);
             //Valido que sea un asset_id correcto
             if(!$asset){
                 $error = ["status" => "Not found", "message" => "El asset_id no corresponde a un Activo"];
@@ -33,7 +34,7 @@ class OperationController{
             }
             else{
                 $precioActual = $asset['current_price'];
-                $balanceData = $db->query("SELECT balance FROM users WHERE id = '$id'")->fetch(PDO::FETCH_ASSOC);
+                $balanceData = User::obtenerBalance($id, $db);
                 $balance = $balanceData['balance'];
                 $total = $precioActual * $quantity;
                 if($balance < $total){
@@ -45,10 +46,9 @@ class OperationController{
                 else{
                     $tiempoActual = date('Y-m-d H:i:s');
                     //Creo la transaction
-                    $db->query("INSERT INTO transactions (user_id,asset_id,transaction_type,quantity,price_per_unit,total_amount,transaction_date)
-                                VALUES ($id, $assetId, 'buy', $quantity, $precioActual, $total, '$tiempoActual')");
+                    Operation::crearTransaccion($id,$assetId,'buy',$quantity,$precioActual,$total,$tiempoActual,$db);
                     //Actualizo el balance
-                    $db->query("UPDATE users SET balance = balance - $total WHERE id = $id");
+                    User::actualizarBalance($total, $id, $db);
                     //Verifico si es la primer compra del activo para crearla o hacer un update
                     $portfolio = $db->query("SELECT * FROM portfolio WHERE user_id = $id AND asset_id = $assetId")->fetch(PDO::FETCH_ASSOC);
                     if($portfolio){
@@ -73,7 +73,7 @@ class OperationController{
         $assetId = trim($datos['asset_id'] ?? '');
         $quantity = trim($datos['quantity'] ?? '');
         //Validaciones
-        $validacion = Operation::validarDatos($assetId,$quantity);
+        $validacion = OperationHelper::validarDatos($assetId,$quantity);
         if($validacion !== true){
             $error = ["status" => "Bad Request", "message" => $validacion];
             $response->getBody()->write(json_encode($error));
