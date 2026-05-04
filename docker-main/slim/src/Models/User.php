@@ -49,4 +49,11 @@ class User {
         $datos = $db->query("SELECT is_admin FROM users WHERE id = $id") ->fetch(PDO::FETCH_ASSOC);
         return $datos ['is_admin'];
     }
+    public static function obtenerBalance($id, $db){
+        $datos = $db->query("SELECT balance FROM users WHERE id = '$id'")->fetch(PDO::FETCH_ASSOC);
+        return $datos;
+    }
+    public static function actualizarBalance($total, $id, $db){
+        $db->query("UPDATE users SET balance = balance - $total WHERE id = $id");
+    }
 }
