@@ -40,4 +40,8 @@ class Asset{
         return $datos;
     }
 
+    public static function obtenerId($assetId, $db){
+        $datos = $db->query("SELECT id FROM assets WHERE id = '$assetId'")->fetch(PDO::FETCH_ASSOC);
+        return $datos;
+    }
 }

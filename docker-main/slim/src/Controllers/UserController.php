@@ -37,7 +37,7 @@ class userController
         // Valido mail no usado
         else {
             $db = DB::getConnection();
-            $resultado = $db->query("SELECT email FROM users WHERE email = '$email'");
+            $resultado = User::obtenerEmail($email, $db);
             $dato = $resultado->fetchAll(PDO::FETCH_ASSOC);
             if ($dato) {
                 $error = ["status" => "Bad request", "message" => "El email ya se encuentra en uso"];
@@ -46,8 +46,7 @@ class userController
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
             }
             // Guardo los datos.
-            $db->query("INSERT INTO users (email, password, name, balance, is_admin) 
-            VALUES ('$email', '$password', '$name', 1000, 0)");
+            User::crearUser($email, $password, $name, $db);
             $id = $db->lastInsertId();
             $token = User::crearToken($id, $db);
             $ok = ["status" => "OK", "message" => "Usuario creado", "token" => $token, "id" => $id];
@@ -128,16 +127,7 @@ class userController
         else{
             $id = $request->getAttribute('userID');
             if(User::esAdmin($id, $db) || $id == $userId){
-                //Calculo el total del portfolio usando SUM(quantity).
-                //Como busco por usuario, SUM puede no tener registros y me devuelve null, por lo que uso COALESCE para que me envie un 0 en vez de null.
-                //La tabla principal es users y uno la tabla de portfolio usando la id de user y user_id de portfolio. 
-                //Uso left join para traerme todos los usuarios aunque no tenga portfolio(que seria 0).
-                //Uso where pq solo estoy buscando las de esa id en especifico.
-                //Los agrupo por id para que cada usuario tenga un único resultado y poder calcular correctamente el total del portfolio con SUM, para que no queden los datos separados.
-                //fetch es para que me devuelva solo uno, y me convierte ese objeto en un array.
-                $userData = $db->query("SELECT u.name, u.balance, COALESCE(SUM(p.quantity*a.current_price), 0) AS total FROM users u 
-                LEFT JOIN portfolio p ON u.id = p.user_id 
-                LEFT JOIN assets a ON p.asset_id = a.id WHERE u.id = '$userId' GROUP BY u.id")->fetch(PDO::FETCH_ASSOC);
+                $userData = User::obtenerPerfil($userId, $db);
                 $ok = ["status" => "OK", "user" => $userData];
                 $response->getBody()->write(json_encode($ok));
                 DB::closeConnection($db);
@@ -157,9 +147,7 @@ class userController
         $db = $request->getAttribute('db');    
         if(User::esAdmin($id, $db)){
         //Traigo los datos de la db y calculo el total
-            $datosUser = $db->query("SELECT u.name, COALESCE(SUM(p.quantity*a.current_price),0) AS total FROM users u
-            LEFT JOIN portfolio p ON u.id = p.user_id 
-            LEFT JOIN assets a ON p.asset_id = a.id GROUP BY u.id")->fetchAll(PDO::FETCH_ASSOC);    // COALESCE                 
+            $datosUser = User::obtenerInversores($db);              
             $ok = ["status" => "OK", "data" => $datosUser];
             $response->getBody()->write(json_encode($ok));
             DB::closeConnection($db);

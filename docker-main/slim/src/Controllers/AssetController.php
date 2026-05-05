@@ -4,7 +4,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 require_once __DIR__ . '/../Models/DB.php';
 require_once __DIR__ . "/../Models/Asset.php";
-require_once __DIR__ . "/../Models/Transaction.php";
+require_once __DIR__ . "/../Models/Operation.php";
 class AssetController{
     public function actualizarValores(Request $request, Response $response){
         //recupero el id y el db que me mando el middleware
@@ -29,7 +29,7 @@ class AssetController{
                 //actualizo el asset en la db
                 Asset::actualizarAsset($assetID, $nuevoPrecio, $tiempoActual, $db);
 
-                Transaction::insertarVariacion($id, $assetID, $nuevoPrecio, $tiempoActual, $db);
+                Operation::crearTransaccion($id, $assetID, 'buy', 0, $nuevoPrecio, 0, $tiempoActual, $db);
             }
 
             //envio el mensaje indicando que ya actualice todos los assets
@@ -107,7 +107,7 @@ class AssetController{
         else{
             $db = DB::getConnection();
             //Verifico que exista el activo.
-            $asset = $db->query("SELECT id FROM assets WHERE id = '$assetId'")->fetch(PDO::FETCH_ASSOC);
+            $asset = Asset::obtenerId($assetId, $db);
             if(!$asset){
                 $error = ["status" => "Not found", "message" => "El asset_id no corresponde a un Activo"];
                 $response->getBody()->write(json_encode($error));
@@ -116,13 +116,7 @@ class AssetController{
             }
             //Devuelvo los datos, si no hubo transacciones(ya que los datos existen), devuelvo un array vacio.
             else{
-            //Busco nombre desde assets, precio por unidad y dia de transaccion desde transactions.
-            //Uso inner join, ya que solo quiero que me devuelva los datos cuando existan ambos(si no existe el id no me devuelve nada).
-            //Diferente del left join que me devolvia los datos de la tabla de usuarios aunque no tenga valores en el portfolio.
-            //Uso el ON para conectr las tablas, WHERE para filtrar, y ORDEN BY para que me aparezcan las ultimas 5 o menos(dependiendo del valor quantity enviado por url).
-                $datos = $db->query("SELECT a.name, t.price_per_unit, t.transaction_date FROM transactions t 
-                INNER JOIN assets a ON t.asset_id = a.id WHERE t.asset_id = '$assetId' AND t.quantity = 0
-                ORDER BY t.transaction_date DESC LIMIT $quantity")->fetchAll(PDO::FETCH_ASSOC);
+                $datos = Operation::obtenerHistorialPrecio($assetId, $quantity, $db);
                 $ok = ["status" => "OK", "data" => $datos];
                 $response->getBody()->write(json_encode($ok));
                 DB::closeConnection($db);

@@ -74,4 +74,30 @@ class User {
     public static function actualizarBalance($total, $id, $db){
         $db->query("UPDATE users SET balance = balance + $total WHERE id = $id");
     }
+
+    public static function obtenerEmail($email, $db){
+        $datos = $db->query("SELECT email FROM users WHERE email = '$email'");
+        return $datos;
+    }
+
+    public static function crearUser($email, $password, $name, $db){
+        $db->query("INSERT INTO users (email, password, name, balance, is_admin) 
+            VALUES ('$email', '$password', '$name', 1000, 0)");
+    }
+
+    //Calculo el total del portfolio.
+    //Agrupo por id para sumar todos los activos que tiene esa id en su portfolio
+    public static function obtenerPerfil($userId, $db){
+        $datos = $db->query("SELECT u.name, u.balance, COALESCE(SUM(p.quantity*a.current_price), 0) AS total FROM users u 
+                LEFT JOIN portfolio p ON u.id = p.user_id 
+                LEFT JOIN assets a ON p.asset_id = a.id WHERE u.id = '$userId' GROUP BY u.id")->fetch(PDO::FETCH_ASSOC);
+        return $datos;
+    }
+
+    public static function obtenerInversores($db){
+        $datos = $db->query("SELECT u.name, COALESCE(SUM(p.quantity*a.current_price),0) AS total FROM users u
+            LEFT JOIN portfolio p ON u.id = p.user_id 
+            LEFT JOIN assets a ON p.asset_id = a.id GROUP BY u.id")->fetchAll(PDO::FETCH_ASSOC);
+        return $datos;
+    }
 }

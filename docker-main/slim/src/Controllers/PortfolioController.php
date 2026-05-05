@@ -36,7 +36,7 @@ class PortfolioController {
         //verifico que el assetID enviado este en el rango correcto
         if($assetID > 0 && $assetID < 8){
             //si esta, hago la consulta a la base de datos 
-            $datos = Portfolio::devolverElementoPorIDs($userID, $assetID, $db);
+            $datos = Portfolio::obtenerQuantity($userID, $assetID, $db);
             if($datos) {
                 //Si la base de datos me devolvio la cantidad, verifico que esta sea exactamente cero
                 if($datos['quantity'] == 0){
