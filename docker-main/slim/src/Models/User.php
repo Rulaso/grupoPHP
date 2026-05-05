@@ -72,6 +72,6 @@ class User {
     }
     
     public static function actualizarBalance($total, $id, $db){
-        $db->query("UPDATE users SET balance = balance - $total WHERE id = $id");
+        $db->query("UPDATE users SET balance = balance + $total WHERE id = $id");
     }
 }

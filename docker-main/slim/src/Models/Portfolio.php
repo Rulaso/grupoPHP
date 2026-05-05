@@ -1,10 +1,6 @@
 <?php
 
 class Portfolio{
-    public static function devolverElementoPorIDs($userID, $assetID, $db){
-       $datos = $db->query("SELECT quantity FROM portfolio WHERE user_id = '$userID' AND asset_id = '$assetID'")->fetch(PDO::FETCH_ASSOC);
-       return $datos;
-    }
 
     public static function eliminarElementoPorIDs($userID,$assetID, $db){
         $datos = $db->query("DELETE FROM portfolio WHERE asset_id = '$assetID' AND user_id = '$userID'");
@@ -36,5 +32,23 @@ class Portfolio{
         //genero la consulta y retorno el resultado en un array asociativo
         $datos = $db->query($consulta)->fetchAll(PDO::FETCH_ASSOC);
         return $datos;
+    }
+    public static function obtenerPortfolio($id, $assetId, $db){
+        $datos = $db->query("SELECT * FROM portfolio WHERE user_id = $id AND asset_id = $assetId")->fetch(PDO::FETCH_ASSOC);
+        return $datos;
+    }
+    public static function actualizarQuantity($quantity, $id, $assetId, $db){
+        $db->query("UPDATE portfolio SET quantity = quantity + $quantity WHERE user_id = $id AND asset_id = $assetId ");
+    }
+    public static function crearPortfolio($id,$assetId,$quantity,$db){
+        $db->query("INSERT INTO portfolio (user_id,asset_id,quantity) 
+            VALUES ($id, $assetId, $quantity)");
+    }
+    public static function obtenerQuantity($id,$assetId,$db){
+        $datos = $db->query("SELECT quantity FROM portfolio WHERE user_id = $id AND asset_id = $assetId")->fetch(PDO::FETCH_ASSOC);
+        return $datos;
+    }
+    public static function borrarAssetVacio($id,$assetId,$db){
+        $db->query("DELETE FROM portfolio WHERE user_id = $id AND asset_id = $assetId AND quantity = 0");
     }
 }

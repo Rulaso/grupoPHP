@@ -4,6 +4,9 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 require_once __DIR__ . '/../Models/DB.php';
 require_once __DIR__ . '/../Models/Operation.php';
+require_once __DIR__ . '/../Models/User.php';
+require_once __DIR__ . '/../Models/Asset.php';
+require_once __DIR__ . '/../Models/Portfolio.php';
 require_once __DIR__ . '/../Helpers/OperationHelper.php';
 
 class OperationController{
@@ -48,15 +51,14 @@ class OperationController{
                     //Creo la transaction
                     Operation::crearTransaccion($id,$assetId,'buy',$quantity,$precioActual,$total,$tiempoActual,$db);
                     //Actualizo el balance
-                    User::actualizarBalance($total, $id, $db);
+                    User::actualizarBalance(-$total, $id, $db);
                     //Verifico si es la primer compra del activo para crearla o hacer un update
-                    $portfolio = $db->query("SELECT * FROM portfolio WHERE user_id = $id AND asset_id = $assetId")->fetch(PDO::FETCH_ASSOC);
+                    $portfolio = Portfolio::obtenerPortfolio($id,$assetId,$db);
                     if($portfolio){
-                        $db->query("UPDATE portfolio SET quantity = quantity + $quantity WHERE user_id = $id AND asset_id = $assetId ");
+                        Portfolio::actualizarQuantity($quantity, $id, $assetId, $db);
                     }
                     else{
-                        $db->query("INSERT INTO portfolio (user_id,asset_id,quantity)
-                                    VALUES ($id, $assetId, $quantity)");
+                        Portfolio::crearPortfolio($id,$assetId,$quantity,$db);
                     }
                     $ok = ["status" => 'OK', "message" => "Se realizó la compra con exito"];
                     $response->getBody()->write(json_encode($ok));
@@ -83,14 +85,14 @@ class OperationController{
         else{
             $id = $request->getAttribute('userID');
             //Valido que sea un asset_id correcto
-            $asset = $db->query("SELECT current_price FROM assets WHERE id = $assetId")->fetch(PDO::FETCH_ASSOC);
+            $asset = Asset::obtenerCurrent_price($assetId, $db);
             if(!$asset){
                 $error = ["status" => "Not found", "message" => "El asset_id no corresponde a un Activo"];
                 $response->getBody()->write(json_encode($error));
                 DB::closeConnection($db);
                 return $response->withHeader('Content-Type','application/json')->withStatus(404);
             }
-            $portfolio = $db->query("SELECT quantity FROM portfolio WHERE user_id = $id AND asset_id = $assetId")->fetch(PDO::FETCH_ASSOC);
+            $portfolio = Portfolio::obtenerQuantity($id,$assetId,$db);
             if(!$portfolio){
                 $error = ["status" => "Conflict", "message" => "No posee Activos de ese tipo"];
                 $response->getBody()->write(json_encode($error));
@@ -110,14 +112,13 @@ class OperationController{
                     $total = $precioActual * $quantity;
                     $tiempoActual = date('Y-m-d H:i:s');
                     //Creo la transaction
-                    $db->query("INSERT INTO transactions (user_id,asset_id,transaction_type,quantity,price_per_unit,total_amount,transaction_date)
-                                VALUES ($id, $assetId, 'sell', $quantity, $precioActual, $total, '$tiempoActual')");
+                    Operation::crearTransaccion ($id, $assetId, 'sell', $quantity, $precioActual, $total, $tiempoActual, $db);
                     //Actualizo el balance
-                    $db->query("UPDATE users SET balance = balance + $total WHERE id = $id");
+                    User::actualizarBalance($total, $id, $db);
                     //Actualizo el portfolio
-                    $db->query("UPDATE portfolio SET quantity = quantity - $quantity WHERE user_id = $id AND asset_id = $assetId ");
+                    Portfolio::actualizarQuantity(-$quantity, $id, $assetId, $db);
                     //Elimino del portfolio el activo si queda en 0
-                    $db->query("DELETE FROM portfolio WHERE user_id = $id AND asset_id = $assetId AND quantity = 0");
+                    Portfolio::borrarAssetVacio($id,$assetId,$db);
                     $ok = ["status" => 'OK', "message" => "Se realizó la venta con exito"];
                     $response->getBody()->write(json_encode($ok));
                     DB::closeConnection($db);
