@@ -18,29 +18,53 @@ public function login(Request $request, Response $response, array $args){
         $response->getBody()->write(json_encode($error));       
         return $response->withHeader('Content-Type', 'application/json')->withStatus(400);      //<-envio el json con el Bad request
     } else {
-        $db = DB::getConnection();
+        $db = null;
 
-        $datos = User::getLoginData($email, $password, $db); //<- Busco y recupero email, password e id del usuario (si es que existe)
+        try {
+            $db = DB::getConnection();
+
+            $datos = User::getLoginData($email, $password, $db); //<- Busco y recupero email, password e id del usuario (si es que existe)
         
-        //verifico que la variable datos contenga los datos del usuario. Si el mismo no existe en la base de datos $datos = false                                                                                                                                       
-        if($datos){ 
+            //verifico que la variable datos contenga los datos del usuario. Si el mismo no existe en la base de datos $datos = false                                                                                                                                       
+            if($datos){ 
             
-            //me guardo el id en una variable
-            $id = $datos['id'];
+                //me guardo el id en una variable
+                $id = $datos['id'];
         
-            $token = User::crearToken($id, $db); //<- Creo el token en la base de datos utulizando el id del usuario
+                $token = User::crearToken($id, $db); //<- Creo el token en la base de datos utulizando el id del usuario
 
-            $cumple = ["status" => "200 OK", "message" => "Se completo existosamente el login", "token" => $token, "id" => $id];    //<-creo el mensaje
-            $response->getBody()->write(json_encode($cumple)); 
-            DB::closeConnection($db);
-            return $response->withHeader("Content-Type", "application/json")->withStatus(200);      //<-envio el json con el OK
-        } else {
-            //Si no cumplen con un usuario existente envio un Bad request
-            $error = ["Status" => "400 Bad request", "message" => "El email o contraseña no coinciden con un usuario existente"];       //<-creo el mensaje
-            $response->getBody()->write(json_encode($error));       
-            DB::closeConnection($db);
-            return $response->withHeader("Content-Type", "application/json")->withStatus(400);      //<-envio el json con el Bad request
+                $cumple = ["status" => "200 OK", "message" => "Se completo existosamente el login", "token" => $token, "id" => $id];    //<-creo el mensaje
+                $response->getBody()->write(json_encode($cumple)); 
+                return $response->withHeader("Content-Type", "application/json")->withStatus(200);      //<-envio el json con el OK
+            } else {
+                //Si no cumplen con un usuario existente envio un Bad request
+                $error = ["Status" => "400 Bad request", "message" => "El email o contraseña no coinciden con un usuario existente"];       //<-creo el mensaje
+                $response->getBody()->write(json_encode($error));       
+                return $response->withHeader("Content-Type", "application/json")->withStatus(400);      //<-envio el json con el Bad request
+            }
+        } catch (PDOException $e){
+            $error = $e->getCode();
+            if($error == 42000){
+                $mensaje = ["Status" => "Internal Server Error", "Message"=>"Error de sintaxis en la base de datos"];
+                $response->getBody()->write(json_encode($mensaje));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+            } else {
+                if($error == 28000){
+                    $mensaje = ["Status"=> "Internal Server Error", "Message"=> "Error al consultar la base de datos, se te rebocaron los permisos"];
+                    $response->getBody()->write(json_encode($mensaje));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+                } else {
+                    $mensaje = ["Status"=>"Internal Server Error", "Message"=> "Error con la base de datos"];
+                    $response->getBody()->write(json_encode($mensaje));
+                    return $response->withHeader("Content-Type", "application/json")->withStatus(500);
+                }
+            }            
+        } finally {
+            if($db != null){
+                DB::closeConnection($db);
+            }
         }
+
     }
 }
 
@@ -54,15 +78,38 @@ public function logout(Request $request, Response $response){
         $response->getBody()->write(json_encode($error));
         return $response->withHeader("Content-Type", "application/json")->withStatus(400);
     } else {
-        $db = DB::getConnection();
-        //recupero el token de $datos
-        User::deleteToken($token, $db);  //<- utilizo deleteToken para borrar el token 
+        $db = null;
+        try {
+            $db = DB::getConnection();
+            //recupero el token de $datos
+            User::deleteToken($token, $db);  //<- utilizo deleteToken para borrar el token 
 
-        //devuelvo codigo 200
-        $exito = ["status" => "200 OK", "message"=> "Se deslogueo correctamente"];
-        $response->getBody()->write(json_encode($exito));
-        DB::closeConnection($db);
-        return $response->withHeader("Content-Type", "application/json")->withStatus(200);
+            //devuelvo codigo 200
+            $exito = ["status" => "200 OK", "message"=> "Se deslogueo correctamente"];
+            $response->getBody()->write(json_encode($exito));
+            return $response->withHeader("Content-Type", "application/json")->withStatus(200);
+        } catch(PDOException $e){
+            $error = $e->getCode();
+            if($error == 42000){
+                $mensaje = ["Status" => "Internal Server Error", "Message"=>"Error de sintaxis en la base de datos"];
+                $response->getBody()->write(json_encode($mensaje));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+            } else {
+                if($error == 28000){
+                    $mensaje = ["Status"=> "Internal Server Error", "Message"=> "Error al consultar la base de datos, se te rebocaron los permisos"];
+                    $response->getBody()->write(json_encode($mensaje));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+                } else {
+                    $mensaje = ["Status"=>"Internal Server Error", "Message"=> "Error con la base de datos"];
+                    $response->getBody()->write(json_encode($mensaje));
+                    return $response->withHeader("Content-Type", "application/json")->withStatus(500);
+                }
+            }
+        } finally {
+            if($db != null){
+                DB::closeConnection($db);
+            }
+        }
     }
 }
 }
