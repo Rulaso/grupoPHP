@@ -2,6 +2,7 @@
 
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+
 require_once __DIR__ . '/../Models/DB.php';
 require_once __DIR__ . '/../Models/User.php';
 
@@ -36,32 +37,54 @@ class userController
         }
         // Valido mail no usado
         else {
-            $db = DB::getConnection();
-            $resultado = User::obtenerEmail($email, $db);
-            $dato = $resultado->fetchAll(PDO::FETCH_ASSOC);
-            if ($dato) {
-                $error = ["status" => "Bad request", "message" => "El email ya se encuentra en uso"];
-                $response->getBody()->write(json_encode($error));
-                DB::closeConnection($db);
-                return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            try {
+                $db = DB::getConnection();
+                $resultado = User::obtenerEmail($email, $db);
+                $dato = $resultado->fetchAll(PDO::FETCH_ASSOC);
+                if ($dato) {
+                    $error = ["status" => "Bad request", "message" => "El email ya se encuentra en uso"];
+                    $response->getBody()->write(json_encode($error));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+                }
+                // Guardo los datos.
+                User::crearUser($email, $password, $name, $db);
+                $id = $db->lastInsertId();
+                $token = User::crearToken($id, $db);
+                $ok = ["status" => "OK", "message" => "Usuario creado", "token" => $token, "id" => $id];
+                $response->getBody()->write(json_encode($ok));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+            } catch (PDOException $e) {
+                $error = $e->getCode();
+                if ($error == 42000) {
+                    $mensaje = ["Status" => "Internal Server Error", "Message" => "Error de sintaxis en la base de datos"];
+                    $response->getBody()->write(json_encode($mensaje));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+                } else {
+                    if ($error == 28000) {
+                        $mensaje = ["Status" => "Internal Server Error", "Message" => "Error al consultar la base de datos se te rebocaron los permisos"];
+                        $response->getBody()->write(json_encode($mensaje));
+                        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+                    } else {
+                        $mensaje = ["Status" => "Internal Server Error", "Message" => "Error con la base de datos"];
+                        $response->getBody()->write(json_encode($mensaje));
+                        return $response->withHeader("Content-Type", "application/json")->withStatus(500);
+                    }
+                }
+            } finally {
+                if ($db != null) {
+                    DB::closeConnection($db);
+                }
             }
-            // Guardo los datos.
-            User::crearUser($email, $password, $name, $db);
-            $id = $db->lastInsertId();
-            $token = User::crearToken($id, $db);
-            $ok = ["status" => "OK", "message" => "Usuario creado", "token" => $token, "id" => $id];
-            $response->getBody()->write(json_encode($ok));
-            DB::closeConnection($db);
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
         }
     }
 
-    public function editar(Request $request, Response $response, array $args){
+    public function editar(Request $request, Response $response, array $args)
+    {
         $db = $request->getAttribute('db');
         //recupero el id que viene por url
         $modificarID = ($args['user_id'] ?? '');
         //verifico que haya enviado un id
-        if(!$modificarID) {
+        if (!$modificarID) {
             $error = ["status" => "Bad request", "message" => "No se reconoce como usuario"];
             $response->getBody()->write(json_encode($error));
             DB::closeConnection($db);
@@ -69,46 +92,64 @@ class userController
         } else {
             $editorID = $request->getAttribute('userID');
 
-            //verifico que sea admin o el mismo usuario
-            if(!User::esAdmin($editorID, $db) && $editorID != $modificarID) {
-                $error = ["status"=> "Bad request", "message"=> "No cuenta con los permisos para realizar esta accion"];
-                $response->getBody()->write(json_encode($error));
-                DB::closeConnection($db);
-                return $response->withHeader("Content-Type", "application/json")->withStatus(400);
-            }
-
-            //recupero la nueva contraseña y el nuevo nombre del body
-            $datos = $request->getParsedBody();
-            $password = ($datos['password'] ?? '');
-            $name = ($datos['name'] ?? '');
-
-            //en el caso de que se haya enviado contraseña, verifico que esta sea valida
-            if($password){
-                if ( strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) 
-                || !preg_match('/[0-9]/', $password) || !preg_match('/[\W]/', $password)) {
-                $error = ["status" => "Bad request", "message" => "La nueva contraseña no cumple los requisitos"];
-                $response->getBody()->write(json_encode($error));
-                DB::closeConnection($db);
-                return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
-                }  else {
-                    User::editarPassword($modificarID, $password, $db);
+            try {
+                //verifico que sea admin o el mismo usuario
+                if (!User::esAdmin($editorID, $db) && $editorID != $modificarID) {
+                    $error = ["status" => "Bad request", "message" => "No cuenta con los permisos para realizar esta accion"];
+                    $response->getBody()->write(json_encode($error));
+                    return $response->withHeader("Content-Type", "application/json")->withStatus(400);
                 }
-            }
-            //Si se envio un nombre, lo actualizo en la base de datos
-            if(empty($name) || !preg_match('/^[a-zA-Z]+$/', $name)){
-                $error = ['status'=> 'Bad request', 'message'=> 'El nombre ingresado no es valido'];
-                $response->getBody()->write(json_encode($error));
-                DB::closeConnection($db);
-                return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
-            } else {
 
+                //recupero la nueva contraseña y el nuevo nombre del body
+                $datos = $request->getParsedBody();
+                $password = ($datos['password'] ?? '');
+                $name = ($datos['name'] ?? '');
+
+                //en el caso de que se haya enviado contraseña, verifico que esta sea valida
+                if ($password) {
+                    if (
+                        strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password)
+                        || !preg_match('/[0-9]/', $password) || !preg_match('/[\W]/', $password)
+                    ) {
+                        $error = ["status" => "Bad request", "message" => "La nueva contraseña no cumple los requisitos"];
+                        $response->getBody()->write(json_encode($error));
+                        return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+                    } else {
+                        User::editarPassword($modificarID, $password, $db);
+                    }
+                }
+                //Si se envio un nombre, lo actualizo en la base de datos
+                if (empty($name) || !preg_match('/^[a-zA-Z]+$/', $name)) {
+                    $error = ['status' => 'Bad request', 'message' => 'El nombre ingresado no es valido'];
+                    $response->getBody()->write(json_encode($error));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+                } else {
+                }
+                User::editarName($modificarID, $name, $db);
+                //Envio el mensaje de 200 OK
+                $mensaje = ["status" => "OK", "message" => "Los datos fueron actualizados"];
+                $response->getBody()->write(json_encode($mensaje));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+            } catch (PDOException $e) {
+                $error = $e->getCode();
+                if ($error == 42000) {
+                    $mensaje = ["Status" => "Internal Server Error", "Message" => "Error de sintaxis en la base de datos"];
+                    $response->getBody()->write(json_encode($mensaje));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+                } else {
+                    if ($error == 28000) {
+                        $mensaje = ["Status" => "Internal Server Error", "Message" => "Error al consultar la base de datos se te rebocaron los permisos"];
+                        $response->getBody()->write(json_encode($mensaje));
+                        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+                    } else {
+                        $mensaje = ["Status" => "Internal Server Error", "Message" => "Error con la base de datos"];
+                        $response->getBody()->write(json_encode($mensaje));
+                        return $response->withHeader("Content-Type", "application/json")->withStatus(500);
+                    }
+                }
+            } finally {
+                DB::closeConnection($db);
             }
-            User::editarName($modificarID, $name, $db);
-            //Envio el mensaje de 200 OK
-            $mensaje = ["status"=> "OK", "message"=> "Los datos fueron actualizados"];
-            $response->getBody()->write(json_encode($mensaje));
-            DB::closeConnection($db);
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
         }
     }
 
@@ -118,46 +159,82 @@ class userController
         //Recupero el id que viene por url
         $userId = $args['user_id'];
         //Si {user_id} no es un numero o esta vacio
-        if(!is_numeric($userId)){
+        if (!is_numeric($userId)) {
             $error = ["status" => "Bad Request", "message" => "Id invalido"];
             $response->getBody()->write(json_encode($error));
             DB::closeConnection($db);
             return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
-        }
-        else{
+        } else {
             $id = $request->getAttribute('userID');
-            if(User::esAdmin($id, $db) || $id == $userId){
-                $userData = User::obtenerPerfil($userId, $db);
-                $ok = ["status" => "OK", "user" => $userData];
-                $response->getBody()->write(json_encode($ok));
+            try {
+                if (User::esAdmin($id, $db) || $id == $userId) {
+                    $userData = User::obtenerPerfil($userId, $db);
+                    $ok = ["status" => "OK", "user" => $userData];
+                    $response->getBody()->write(json_encode($ok));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+                } else {
+                    $error = ["status" => "Bad Request", "message" => "No tiene permisos"];
+                    $response->getBody()->write(json_encode($error));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+                }
+            } catch (PDOException $e) {
+                $error = $e->getCode();
+                if ($error == 42000) {
+                    $mensaje = ["Status" => "Internal Server Error", "Message" => "Error de sintaxis en la base de datos"];
+                    $response->getBody()->write(json_encode($mensaje));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+                } else {
+                    if ($error == 28000) {
+                        $mensaje = ["Status" => "Internal Server Error", "Message" => "Error al consultar la base de datos se te rebocaron los permisos"];
+                        $response->getBody()->write(json_encode($mensaje));
+                        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+                    } else {
+                        $mensaje = ["Status" => "Internal Server Error", "Message" => "Error con la base de datos"];
+                        $response->getBody()->write(json_encode($mensaje));
+                        return $response->withHeader("Content-Type", "application/json")->withStatus(500);
+                    }
+                }
+            } finally {
                 DB::closeConnection($db);
-                return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
-            }
-            else{
-                $error = ["status" => "Bad Request", "message" => "No tiene permisos"];
-                $response->getBody()->write(json_encode($error));
-                DB::closeConnection($db);
-                return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
             }
         }
     }
 
-    public function getUsers(Request $request, Response $response){
+    public function getUsers(Request $request, Response $response)
+    {
         $id = $request->getAttribute('userID');
-        $db = $request->getAttribute('db');    
-        if(User::esAdmin($id, $db)){
-        //Traigo los datos de la db y calculo el total
-            $datosUser = User::obtenerInversores($db);              
-            $ok = ["status" => "OK", "data" => $datosUser];
-            $response->getBody()->write(json_encode($ok));
+        $db = $request->getAttribute('db');
+        try {
+            if (User::esAdmin($id, $db)) {
+                //Traigo los datos de la db y calculo el total
+                $datosUser = User::obtenerInversores($db);
+                $ok = ["status" => "OK", "data" => $datosUser];
+                $response->getBody()->write(json_encode($ok));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+            } else {
+                $error = ["status" => "Bad Request", "message" => "No tiene permisos"];
+                $response->getBody()->write(json_encode($error));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+            }
+        } catch (PDOException $e) {
+            $error = $e->getCode();
+            if ($error == 42000) {
+                $mensaje = ["Status" => "Internal Server Error", "Message" => "Error de sintaxis en la base de datos"];
+                $response->getBody()->write(json_encode($mensaje));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+            } else {
+                if ($error == 28000) {
+                    $mensaje = ["Status" => "Internal Server Error", "Message" => "Error al consultar la base de datos se te rebocaron los permisos"];
+                    $response->getBody()->write(json_encode($mensaje));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+                } else {
+                    $mensaje = ["Status" => "Internal Server Error", "Message" => "Error con la base de datos"];
+                    $response->getBody()->write(json_encode($mensaje));
+                    return $response->withHeader("Content-Type", "application/json")->withStatus(500);
+                }
+            }
+        } finally {
             DB::closeConnection($db);
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
-        }
-        else{
-            $error = ["status" => "Bad Request", "message" => "No tiene permisos"];
-            $response->getBody()->write(json_encode($error));
-            DB::closeConnection($db);
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
         }
     }
 }

@@ -1,53 +1,76 @@
 <?php
+
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 require_once __DIR__ . '/../Models/DB.php';
 require_once __DIR__ . "/../Models/Asset.php";
 require_once __DIR__ . "/../Models/Operation.php";
-class AssetController{
-    public function actualizarValores(Request $request, Response $response){
+class AssetController
+{
+    public function actualizarValores(Request $request, Response $response)
+    {
         //recupero el id y el db que me mando el middleware
         $id = $request->getAttribute('userID');
         $db = $request->getAttribute('db');
 
-        //verifico que el usuario sea admin
-        if(User::esAdmin($id, $db)){
-            //obtengo el id, current_price y last_update de TODOS los assets en la DB
-            $datos = Asset::obtenerAsset($db);
+        try {
+            //verifico que el usuario sea admin
+            if (User::esAdmin($id, $db)) {
+                //obtengo el id, current_price y last_update de TODOS los assets en la DB
+                $datos = Asset::obtenerAsset($db);
 
-            //recorro todo el vector actualizando uno por uno los valores de current_price y last_update
-            foreach($datos as $asset){
-                $assetID = $asset['id'];
-                $precio = $asset['current_price'];
-                $lastUpdate = $asset['last_update'];
+                //recorro todo el vector actualizando uno por uno los valores de current_price y last_update
+                foreach ($datos as $asset) {
+                    $assetID = $asset['id'];
+                    $precio = $asset['current_price'];
+                    $lastUpdate = $asset['last_update'];
 
-                //invoco a la funcion del ejemplo obteniendo un nuevo precio para mi asset
-                $nuevoPrecio = self::variarPrecioPorTiempo($precio, $lastUpdate);
-                //obtengo la fecha actual de actualizacion
-                $tiempoActual = date('Y-m-d H:i:s');
-                //actualizo el asset en la db
-                Asset::actualizarAsset($assetID, $nuevoPrecio, $tiempoActual, $db);
+                    //invoco a la funcion del ejemplo obteniendo un nuevo precio para mi asset
+                    $nuevoPrecio = self::variarPrecioPorTiempo($precio, $lastUpdate);
+                    //obtengo la fecha actual de actualizacion
+                    $tiempoActual = date('Y-m-d H:i:s');
+                    //actualizo el asset en la db
+                    Asset::actualizarAsset($assetID, $nuevoPrecio, $tiempoActual, $db);
 
-                Operation::crearTransaccion($id, $assetID, 'buy', 0, $nuevoPrecio, 0, $tiempoActual, $db);
+                    Operation::crearTransaccion($id, $assetID, 'buy', 0, $nuevoPrecio, 0, $tiempoActual, $db);
+                }
+
+                //envio el mensaje indicando que ya actualice todos los assets
+                $mensaje = ['Status' => 'OK', 'message' => 'Los valores fueron actualizados correctamente'];
+                $response->getBody()->write(json_encode($mensaje));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+            } else {
+                //envio el mensaje de error indicando que el usuario logueado no es admin
+                $error = ['status' => 'Unauthorized', 'message' => 'no tiene los permisos para realizar esta accion'];
+                $response->getBody()->write(json_encode($error));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
             }
-
-            //envio el mensaje indicando que ya actualice todos los assets
-            $mensaje = ['Status'=> 'OK', 'message'=> 'Los valores fueron actualizados correctamente'];
-            $response->getBody()->write(json_encode($mensaje));
+        } catch (PDOException $e) {
+            $error = $e->getCode();
+            if ($error == 42000) {
+                $mensaje = ["Status" => "Internal Server Error", "Message" => "Error de sintaxis en la base de datos"];
+                $response->getBody()->write(json_encode($mensaje));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+            } else {
+                if ($error == 28000) {
+                    $mensaje = ["Status" => "Internal Server Error", "Message" => "Error al consultar la base de datos se te rebocaron los permisos"];
+                    $response->getBody()->write(json_encode($mensaje));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+                } else {
+                    $mensaje = ["Status" => "Internal Server Error", "Message" => "Error con la base de datos"];
+                    $response->getBody()->write(json_encode($mensaje));
+                    return $response->withHeader("Content-Type", "application/json")->withStatus(500);
+                }
+            }
+        } finally {
             DB::closeConnection($db);
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(200);            
-        } else {
-            //envio el mensaje de error indicando que el usuario logueado no es admin
-            $error = ['status'=> 'Unauthorized', 'message'=> 'no tiene los permisos para realizar esta accion'];
-            $response->getBody()->write(json_encode($error));
-            DB::closeConnection($db);
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
         }
     }
 
     //funcion  encargada de cambiar el precio de las variables (funcion auxiliar para mejorar la legibilidad del codigo)
-    private static function variarPrecioPorTiempo($precioActual, $timestampUltimaVez, $volatilidadPorSegundo = 0.05) {
+    private static function variarPrecioPorTiempo($precioActual, $timestampUltimaVez, $volatilidadPorSegundo = 0.05)
+    {
         // 1. Calcular cuántos segundos han pasado
         $timestampUltimaVez = strtotime($timestampUltimaVez);
         $tiempoPasado = time() - $timestampUltimaVez; // Si no ha pasado tiempo, el precio no cambia
@@ -60,7 +83,8 @@ class AssetController{
         return $precioActual + $delta;
     }
 
-    public function buscarAssets(Request $request, Response $response, array $args) {
+    public function buscarAssets(Request $request, Response $response, array $args)
+    {
         //Recupero los datos como parametros
         $datos = $request->getQueryParams();
 
@@ -70,59 +94,101 @@ class AssetController{
         $max = ($datos['max_price'] ?? null);
 
         //abro la base de datos
-        $db = DB::getConnection();
+        try {
+            $db = DB::getConnection();
 
-        //Efectuo la consulta 
-        $datos = Asset::buscarDinamico($nombre, $min, $max, $db);
-        //cierro la base de datos (se hace aca para no repetir en cada return)
-        DB::closeConnection($db);
+            //Efectuo la consulta 
+            $datos = Asset::buscarDinamico($nombre, $min, $max, $db);
 
-        //Si mi array de datos tiene contenido devuelvo un 200 OK junto con el array
-        if($datos){
-            $mensaje = ["Status"=>"OK","message"=>"Se encontraron los siguientes resultados", "datos"=>$datos];
-            $response->getBody()->write(json_encode($mensaje));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
-        } else {
-        //Si mi array no contiene datos devuelvo un 404 Not Found indicando que los parametros de busqueda estan mal
-            $mensaje = ["Status"=>"Not found","message"=>"No se encontraron resultados de busqueda", "datos"=> $datos];
-            $response->getBody()->write(json_encode($mensaje));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            //Si mi array de datos tiene contenido devuelvo un 200 OK junto con el array
+            if ($datos) {
+                $mensaje = ["Status" => "OK", "message" => "Se encontraron los siguientes resultados", "datos" => $datos];
+                $response->getBody()->write(json_encode($mensaje));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+            } else {
+                //Si mi array no contiene datos devuelvo un 404 Not Found indicando que los parametros de busqueda estan mal
+                $mensaje = ["Status" => "Not found", "message" => "No se encontraron resultados de busqueda", "datos" => $datos];
+                $response->getBody()->write(json_encode($mensaje));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            }
+        } catch (PDOException $e) {
+            $error = $e->getCode();
+            if ($error == 42000) {
+                $mensaje = ["Status" => "Internal Server Error", "Message" => "Error de sintaxis en la base de datos"];
+                $response->getBody()->write(json_encode($mensaje));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+            } else {
+                if ($error == 28000) {
+                    $mensaje = ["Status" => "Internal Server Error", "Message" => "Error al consultar la base de datos se te rebocaron los permisos"];
+                    $response->getBody()->write(json_encode($mensaje));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+                } else {
+                    $mensaje = ["Status" => "Internal Server Error", "Message" => "Error con la base de datos"];
+                    $response->getBody()->write(json_encode($mensaje));
+                    return $response->withHeader("Content-Type", "application/json")->withStatus(500);
+                }
+            }
+        } finally {
+            if ($db != null) {
+                DB::closeConnection($db);
+            }
         }
     }
-    public function activoPrecio(Request $request, Response $response, array $args){
+
+    public function activoPrecio(Request $request, Response $response, array $args)
+    {
         $assetId = ($args['asset_id'] ?? '');
         $quantity = ($args['quantity'] ?? '');
         //Verifico asset
-        if(!is_numeric($assetId) || $assetId <= 0){
+        if (!is_numeric($assetId) || $assetId <= 0) {
             $error = ["status" => "Bad request", "message" => "asset_id debe ser un entero positivo"];
             $response->getBody()->write(json_encode($error));
-            return $response->withHeader('Content-Type','application/json')->withStatus(400);
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
         }
         //Verifico quantity
-        else if(!is_numeric($quantity) || $quantity <= 0 || $quantity > 5){
+        else if (!is_numeric($quantity) || $quantity <= 0 || $quantity > 5) {
             $error = ["status" => "Bad request", "message" => "La cantidad debe ser un entero positivo, maximo 5"];
             $response->getBody()->write(json_encode($error));
-            return $response->withHeader('Content-Type','application/json')->withStatus(400);
-        }
-        else{
-            $db = DB::getConnection();
-            //Verifico que exista el activo.
-            $asset = Asset::obtenerId($assetId, $db);
-            if(!$asset){
-                $error = ["status" => "Not found", "message" => "El asset_id no corresponde a un Activo"];
-                $response->getBody()->write(json_encode($error));
-                DB::closeConnection($db);
-                return $response->withHeader('Content-Type','application/json')->withStatus(404);
-            }
-            //Devuelvo los datos, si no hubo transacciones(ya que los datos existen), devuelvo un array vacio.
-            else{
-                $datos = Operation::obtenerHistorialPrecio($assetId, $quantity, $db);
-                $ok = ["status" => "OK", "data" => $datos];
-                $response->getBody()->write(json_encode($ok));
-                DB::closeConnection($db);
-                return $response->withHeader('Content-Type','application/json')->withStatus(200);
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        } else {
+            try {
+                $db = DB::getConnection();
+                //Verifico que exista el activo.
+                $asset = Asset::obtenerId($assetId, $db);
+                if (!$asset) {
+                    $error = ["status" => "Not found", "message" => "El asset_id no corresponde a un Activo"];
+                    $response->getBody()->write(json_encode($error));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+                }
+                //Devuelvo los datos, si no hubo transacciones(ya que los datos existen), devuelvo un array vacio.
+                else {
+                    $datos = Operation::obtenerHistorialPrecio($assetId, $quantity, $db);
+                    $ok = ["status" => "OK", "data" => $datos];
+                    $response->getBody()->write(json_encode($ok));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+                }
+            } catch (PDOException $e) {
+                $error = $e->getCode();
+                if ($error == 42000) {
+                    $mensaje = ["Status" => "Internal Server Error", "Message" => "Error de sintaxis en la base de datos"];
+                    $response->getBody()->write(json_encode($mensaje));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+                } else {
+                    if ($error == 28000) {
+                        $mensaje = ["Status" => "Internal Server Error", "Message" => "Error al consultar la base de datos se te rebocaron los permisos"];
+                        $response->getBody()->write(json_encode($mensaje));
+                        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+                    } else {
+                        $mensaje = ["Status" => "Internal Server Error", "Message" => "Error con la base de datos"];
+                        $response->getBody()->write(json_encode($mensaje));
+                        return $response->withHeader("Content-Type", "application/json")->withStatus(500);
+                    }
+                }
+            } finally {
+                if ($db != null) {
+                    DB::closeConnection($db);
+                }
             }
         }
     }
-
 }
