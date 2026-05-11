@@ -5,10 +5,11 @@ require_once __DIR__ . '/Controllers/UserController.php';
 require_once __DIR__ . '/Middlewares/AuthToken.php';
 require_once __DIR__ . '/Controllers/AssetController.php';
 require_once __DIR__ . '/Controllers/PortfolioController.php';
+require_once __DIR__ . '/Controllers/OperationController.php';
 //login
 $app->post('/login', [LoginController::class ,'login']);
-//logout
-$app->post('/logout', [LoginController::class ,'logout']);
+//logout (REQUIERE LOGIN)
+$app->post('/logout', [LoginController::class ,'logout'])->add(AuthToken::class);
 //create
 $app->post('/users', [UserController::class,'create']);
 
@@ -45,7 +46,3 @@ $app->post('/trade/buy', [OperationController::class, 'comprarActivo'])->add(Aut
 
 //REQUIERE LOGIN, realiza la venta de un activo
 $app->post('/trade/sell', [OperationController::class, 'venderActivo'])->add(AuthToken::class);
-
-
-//IMPORTANTE PARA NO OLVIDARME, LA BASE DE DATOS TIENE LA INFORMACION DE LOS ACTIVOS SIN NECESIDAD DE CREARLOS? Y SI ES ASI, TENEMOS QUE ACTUALIZAR SUS DATOS CADA VEZ QUE LLAMAMOS A LA FUNCION?
-//PQ YO PARA HACER LA COMPRA-VENTA USE LOS DATOS DE ASSETS CURRENT_PRICE, PERO SI NO SE HACE ASI, TENGO QUE CAMBIARLO Y BUSCAR EL PRECIO EN LAS TRANSACCIONES QUE TENGA UNA COMPRA DE 0, COMO HICE CON LO OTRO.

@@ -68,21 +68,13 @@ public function login(Request $request, Response $response, array $args){
     }
 }
 
-public function logout(Request $request, Response $response){
-    //recupero los datos enviados por el body
-    $datos = $request->getParsedBody();
-    $token = trim($datos['token'] ?? '');
-    //si no hay datos devuelvo un error 400
-    if(empty($token)){
-        $error = ["status " => "400 Bad request", "message" => "Necesitas estar logueado para hacer esta accion"];
-        $response->getBody()->write(json_encode($error));
-        return $response->withHeader("Content-Type", "application/json")->withStatus(400);
-    } else {
-        $db = null;
+    public function logout(Request $request, Response $response){
+        $db = $request->getAttribute('db');
+        $id = $request->getAttribute('userID');
         try {
             $db = DB::getConnection();
             //recupero el token de $datos
-            User::deleteToken($token, $db);  //<- utilizo deleteToken para borrar el token 
+            User::deleteToken($id, $db);  //<- utilizo deleteToken para borrar el token 
 
             //devuelvo codigo 200
             $exito = ["status" => "200 OK", "message"=> "Se deslogueo correctamente"];
@@ -111,5 +103,4 @@ public function logout(Request $request, Response $response){
             }
         }
     }
-}
 }
