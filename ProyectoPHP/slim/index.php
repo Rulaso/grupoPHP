@@ -1,17 +1,12 @@
 <?php
 
-
-
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
 
 require __DIR__ . '/vendor/autoload.php';
 
-
-
 $app = AppFactory::create();
-$app->addBodyParsingMiddleware();
 $app->addRoutingMiddleware();
 $app->addErrorMiddleware(true, true, true);
 $app->add( function ($request, $handler) {
@@ -26,6 +21,5 @@ $app->add( function ($request, $handler) {
 });
 
 // ACÁ VAN LOS ENDPOINTS
-require_once __DIR__ . '/src/Routes.php';
-require_once __DIR__ . '/src/Models/User.php';
+
 $app->run();
