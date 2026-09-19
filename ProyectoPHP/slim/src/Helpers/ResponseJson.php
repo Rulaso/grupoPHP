@@ -23,7 +23,7 @@ class ResponseJson{
         // Reutilizo el método json
         return self::json($response, 500, [
             "status" => "Internal Server Error",
-            "message" => $mensaje
+            "db" => $mensaje
         ]);
     }
 }

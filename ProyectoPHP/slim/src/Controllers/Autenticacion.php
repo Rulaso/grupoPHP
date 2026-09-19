@@ -54,4 +54,16 @@ class Autenticacion{
             }
         }
     }
+
+    public static function logout(Request $request, Response $response){
+        $id = $request->getAttribute('userID');
+        $db = $request->getAttribute('db');
+
+        try{
+            Usuario::borrarToken($id, $db);
+            return ResponseJson::json($response, 200,['Status' => 'OK', 'Message' => 'La sesion se cerro con exito']);
+        } catch (\PDOException $e){
+            return ResponseJson::dbError($response, $e);
+        }
+    }
 }

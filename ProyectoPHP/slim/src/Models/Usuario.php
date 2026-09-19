@@ -75,4 +75,26 @@ class Usuario{
         $db->query("UPDATE usuario SET token = '$token', token_expired_at = '$tokenExpired' WHERE username = '$username'");
     }
 
+
+    public static function obtenerTokenExpired($token, $db){
+        $datos = $db->query("SELECT id, token_expired_at FROM usuario WHERE token = '$token'")->fetch(PDO::FETCH_ASSOC);
+        return $datos;
+    }
+
+    //Reestablesco la duracion del token en 5 minutos
+    public static function actualizarToken($id, $db){
+        $tokenExpire = date('Y-m-d H:i:s', strtotime('+5 minutes'));
+        $db->query("UPDATE usuario SET token_expired_at = '$tokenExpire' WHERE id = '$id'");
+    }
+
+    //Borro el token y su tiempo de expiracion de la base de datos
+        public static function borrarToken($id, $db){
+        $db->query("UPDATE usuario SET token = NULL, token_expired_at = NULL WHERE id = '$id'");
+    }
+
+    //recibo un token y devuelvo el id del usuario y si el mismo es admin
+    public static function obtenerUsuarioPorToken($token, $db){
+        $datos = $db->query("SELECT id, is_admin FROM usuario WHERE token = '$token'");
+        return $datos->fetch(PDO::FETCH_ASSOC);
+    }
 }
