@@ -1,5 +1,4 @@
 <?php
-
 class ResponseJson{
     public static function json($response, int $codigo, array $datos){
         $response->getBody()->write(json_encode($datos));
