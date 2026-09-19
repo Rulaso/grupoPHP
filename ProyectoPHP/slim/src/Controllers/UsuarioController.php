@@ -33,7 +33,7 @@ class usuarioController
         else if(empty($nombre) || !preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]{2,50}$/u', $nombre)){
             return ResponseJson::json($response,400,
             ["status" => "Bad Request",
-            "name" => "El nombre solo puede contener letras y espacios, entre 2 y 50 caracteres"]);
+            "nombre" => "El nombre solo puede contener letras y espacios, entre 2 y 50 caracteres"]);
         }
         //Valido username no usado
         else{
@@ -93,7 +93,7 @@ class usuarioController
             DB::closeConnection($db);
             return ResponseJson::json($response,400,
             ["status"=> "Bad Request",
-            "message"=> "Id invalido"]);
+            "user_id"=> "Id invalido"]);
         }
         else{
             $id = $request->getAttribute('userID');
@@ -105,7 +105,7 @@ class usuarioController
                 else{
                     return ResponseJson::json($response,401, 
                     ["status" => "Bad Request", 
-                    "message" => "No tiene permisos"]);
+                    "user_id" => "No tiene permisos"]);
                 }
             }
             catch(PDOException $e){
@@ -128,7 +128,7 @@ class usuarioController
             DB::closeConnection($db);
             return ResponseJson::json($response,400,
             ["status"=> "Bad Request",
-            "message"=> "Id invalido"]);
+            "user_id"=> "Id invalido"]);
         }
         else{
             $id = $request->getAttribute('userID');
@@ -141,7 +141,7 @@ class usuarioController
                         if (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]{2,50}$/u', $nombre)) {
                             return ResponseJson::json($response,400,
                             ["status" => "Bad Request",
-                            "message" => "El nombre solo puede contener letras y espacios, entre 2 y 50 caracteres"]);
+                            "nombre" => "El nombre solo puede contener letras y espacios, entre 2 y 50 caracteres"]);
                         }
                     }
 
@@ -151,7 +151,7 @@ class usuarioController
                         if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,15}$/', $password)) {
                             return ResponseJson::json($response,400,
                             ["status" => "Bad Request",
-                            "message" => "La contraseña debe contener al menos 1 minúscula, 1 mayúscula, 1 número y 1 carácter especial, entre 8 y 15 caracteres"]);
+                            "password" => "La contraseña debe contener al menos 1 minúscula, 1 mayúscula, 1 número y 1 carácter especial, entre 8 y 15 caracteres"]);
                         }
                     }
 
@@ -161,7 +161,7 @@ class usuarioController
                         if ($esPublico != 0 && $esPublico != 1) {
                             return ResponseJson::json($response,400,
                             ["status" => "Bad Request",
-                            "message" => "es_publico debe ser 0 o 1"]);
+                            "es_publico" => "es_publico debe ser 0 o 1"]);
                         }
                     }
                     //Actualizo
@@ -181,7 +181,7 @@ class usuarioController
                 else {
                     return ResponseJson::json($response,401, 
                     ["status" => "Bad Request", 
-                    "message" => "No tiene permisos"]);
+                    "user_id" => "No tiene permisos"]);
                 }
             }
             catch(PDOException $e){
@@ -204,7 +204,7 @@ class usuarioController
             DB::closeConnection($db);
             return ResponseJson::json($response,400,
             ["status"=> "Bad Request",
-            "message"=> "Id invalido"]);
+            "user_id"=> "Id invalido"]);
         }
         else{
             $id = $request->getAttribute('userID');
@@ -218,7 +218,7 @@ class usuarioController
                 else{
                     return ResponseJson::json($response,401, 
                     ["status" => "Bad Request", 
-                    "message" => "No tiene permisos"]);
+                    "user_id" => "No tiene permisos"]);
                 }
             }
             catch(PDOException $e){
