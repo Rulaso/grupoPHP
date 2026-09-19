@@ -13,7 +13,7 @@ class ResponseJson{
                 $mensaje = "Error de sintaxis en la base de datos";
                 break;
             case '28000':
-                $mensaje = "Error al consultar la base de datos se te revocaron los permisos";
+                $mensaje = "Error al consultar la base de datos, se te revocaron los permisos";
                 break;
             default:
                 $mensaje = "Error con la base de datos";
