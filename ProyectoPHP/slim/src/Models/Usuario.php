@@ -97,4 +97,43 @@ class Usuario{
         $datos = $db->query("SELECT id, is_admin FROM usuario WHERE token = '$token'");
         return $datos->fetch(PDO::FETCH_ASSOC);
     }
+
+    public static function buscarUsuarios($userID, $esAdmin, $username, $orden, $limite, $offset, $db){
+    //consulta BASE
+    $consulta = "SELECT u.id, u.nombre, u.es_publico, u.is_admin ";
+
+    if($esAdmin){
+        //Trae los datos pedidos en el caso de que el usuario sea admin
+        $consulta .= ", (SELECT COUNT(*) FROM chat c WHERE c.creado_por = u.id OR c.usuario_id = u.id) AS cantidad_chats";
+    }
+
+    //Sirve para poder armar la consulta dinamica de forma segura
+    $consulta .= " FROM usuario u WHERE 1=1 ";
+
+    if($userID){
+        //Si el usuario esta logueado lo excluye
+        $consulta .= " AND u.id != '$userID' ";
+    } else {
+        //Si el usuario no esta logueado solo busca los publicos
+        $consulta .= " AND u.es_publico = 1 ";
+    }
+
+    if($username){
+        //Los % en el LIKE son para buscar parcialemnte 
+        $consulta .= " AND (u.username LIKE '%$username%' OR u.nombre LIKE '%$username%') ";
+    }
+
+    $consulta .= " ORDER BY u.username ";
+
+    //Se pasa a minusculas para normalizarlo y luego se verifica el tipo de orden
+    if ($orden && strtolower($orden) == 'desc') {
+        $consulta .= " DESC ";
+    } else {
+        $consulta .= " ASC ";
+    }
+
+    $datos = $db->query($consulta)->fetchAll(PDO::FETCH_ASSOC);
+    return $datos;
+        
+    }
 }

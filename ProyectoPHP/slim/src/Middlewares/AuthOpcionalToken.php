@@ -3,7 +3,7 @@
 require_once __DIR__ . "/../Models/Usuario.php";
 require_once __DIR__ ."/../Models/DB.php";
 require_once __DIR__ . "/../Helpers/ResponseJson.php";
-class AuthToken{
+class AuthOpcionalToken{
     public function __invoke($request, $handler){
         $db = null;
         
@@ -17,15 +17,12 @@ class AuthToken{
            
             //Llamo a la funcion esta logueado
             $id = self::estaLogueado($token, $db);
-            //Si esta logueado, continuo con la ejecucion y envio el id del usuario que envio el token 
-            if($id != null){
-                return $handler->handle($request->withAttribute('userID', $id)->withAttribute('db', $db));
-            } else {
-                //Si no esta logueado creo el objeto response y envio la respuesta a postman 
-                $response = new \Slim\Psr7\Response();
-                return ResponseJson::json($response, 400,['Status'=>'Bad request', 'token'=>'Tenes que estar logueado para hacer esta accion']);
-            }
+            //Si el usuario envio un token valido en userID va a ir el id del usuario, si el usuario envio un token invalido o no envio token
+            //en userID va a ir null representando que es un invitado, en db siempre viaja la referencia a la base de datos
+            return $handler->handle($request->withAttribute('userID', $id)->withAttribute('db', $db));
+            
         } catch (PDOException $e){
+             $response = new \Slim\Psr7\Response();
              return ResponseJson::dbError($response, $e);
         } finally {
             if($db != null){

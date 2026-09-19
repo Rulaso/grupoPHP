@@ -7,7 +7,7 @@ require_once __DIR__ . '/../Models/Usuario.php';
 
 class Autenticacion{
     //MODELO EL INICIO DE SESION
-    public static function login(Request $request, Response $response){
+    public function login(Request $request, Response $response){
         //recupero los datos ingresados
         $datos = $request->getParsedBody();
 
@@ -55,7 +55,7 @@ class Autenticacion{
         }
     }
 
-    public static function logout(Request $request, Response $response){
+    public function logout(Request $request, Response $response){
         $id = $request->getAttribute('userID');
         $db = $request->getAttribute('db');
 
