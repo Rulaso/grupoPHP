@@ -5,8 +5,11 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
 
 require __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/src/Controllers/Autenticacion.php';
+
 
 $app = AppFactory::create();
+$app->addBodyParsingMiddleware();
 $app->addRoutingMiddleware();
 $app->addErrorMiddleware(true, true, true);
 $app->add( function ($request, $handler) {
@@ -21,5 +24,5 @@ $app->add( function ($request, $handler) {
 });
 
 // ACÁ VAN LOS ENDPOINTS
-
+require __DIR__ . '/src/Routes.php';
 $app->run();

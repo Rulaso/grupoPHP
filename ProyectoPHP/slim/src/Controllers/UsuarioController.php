@@ -21,19 +21,19 @@ class usuarioController
         if(empty($username) || !preg_match('/^@[a-zA-Z0-9]{5,12}$/', $username) ){
             return ResponseJson::json($response, 400, 
             ["status" => "Bad Request", 
-            "message" => "El username debe empezar con @, permitiendo solo letras y numeros, entre 4-11 caracteres"]);         
+            "username" => "El username debe empezar con @, permitiendo solo letras y numeros, entre 4-11 caracteres"]);         
         }
         //?=.* significa al menos; \d significa 0-9; \W_ significa caracter especial
         else if(empty($password) || !preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,15}$/', $password)){
             return ResponseJson::json($response,400,
             ["status" => "Bad Request",
-            "message" => "La contraseña debe contener 1 minuscula, 1 mayuscula, 1 numero y un caracter especial, entre 8-15 caracteres"]);
+            "password" => "La contraseña debe contener 1 minuscula, 1 mayuscula, 1 numero y un caracter especial, entre 8-15 caracteres"]);
         }
         // /u es para que acepte tildes y Ñ
         else if(empty($nombre) || !preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]{2,50}$/u', $nombre)){
             return ResponseJson::json($response,400,
             ["status" => "Bad Request",
-            "message" => "El nombre solo puede contener letras y espacios, entre 2 y 50 caracteres"]);
+            "name" => "El nombre solo puede contener letras y espacios, entre 2 y 50 caracteres"]);
         }
         //Valido username no usado
         else{
@@ -44,7 +44,7 @@ class usuarioController
                 if($dato){
                     return ResponseJson::json($response,400,
                     ["status" => "Bad request", 
-                    "message" => "El username ya se encuentra en uso"]);
+                    "username" => "El username ya se encuentra en uso"]);
                 }
 
                 // Creo usuario

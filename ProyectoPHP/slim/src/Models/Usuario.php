@@ -2,7 +2,7 @@
 
 class Usuario{
     public static function obtenerUsuario($usuario, $db){
-        $datos = $db->query("SELECT username FROM usuario WHERE username = '$usuario'");
+        $datos = $db->query("SELECT username FROM usuario WHERE username = '$usuario'")->fetch(PDO::FETCH_ASSOC);
         return $datos;
     }
 

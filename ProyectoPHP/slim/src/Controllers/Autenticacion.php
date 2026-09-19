@@ -26,14 +26,14 @@ class Autenticacion{
             $db = DB::getConnection();
             //verifico que el nombre de usuario exista
             if(!Usuario::obtenerUsuario($username, $db)){
-                return ResponseJson::json($response, 400,['Status' => 'Bad request', 'username' => 'El nombre de usuario ingresado no corresponde
-                a ningun usuario registrado']);
+                return ResponseJson::json($response, 400,['Status' => 'Bad request', 'username' => 'El nombre de usuario ingresado no corresponde a ningun usuario registrado']);
             } else {
                 //recibo la contraseña hasehada de la base de datos
                 $datos = Usuario::obtenerContraseña($username, $db);
                 $passwordHasehada = $datos['password'];
                 //password_verify es una funcion de PHP que verifica una contraseña hasehada con una no hasheada, devuelve true si son iguales
-                if(password_verify($password,$passwordHasehada)){
+                //if(password_verify($password,$passwordHasehada)){
+                if($passwordHasehada && $password == $passwordHasehada){
                     //si entro a este if significa que el usuario ingreso los datos correctos y se loguea 
                     $token = bin2hex(random_bytes(32));
                     $fecha = new DateTime;
@@ -46,8 +46,12 @@ class Autenticacion{
                     return ResponseJson::json($response, 400,['Status' => 'Bad request', 'password' => 'La contraseña ingresada no coincide para el usuario ']);
                 }
             }
-        } 
+        } catch (\PDOException $e){
+            return ResponseJson::dbError($response, $e);
+        } finally {
+            if($db != null){
+                DB::closeConnection($db);
+            }
+        }
     }
-
-
 }
