@@ -65,6 +65,17 @@ class usuarioController
     }
     public function getUsuarios(Request $request, Response $response, array $args)
     {
+        $db = $request->getAttribute('db');
+        //Recupero el id que viene por url
+        $userId = $args['user_id'];
+        //Confirmo que sea un numero
+        if(!is_numeric($userId)){
+            DB::closeConnection($db);
+            return ResponseJson::json($response,400,
+            ["status"=> "Bad Request",
+            "message"=> "Id invalido"]);
+        }
+        
 
     }
 }
