@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../Helpers/ResponseJson.php';
 
 class Usuario{
     public static function obtenerUsuario($usuario, $db){

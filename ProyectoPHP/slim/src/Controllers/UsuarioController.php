@@ -4,6 +4,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 require_once __DIR__ . '/../Helpers/ResponseJson.php';
 require_once __DIR__ . '/../Models/DB.php';
+require_once __DIR__ . '/../Models/Usuario.php';
 
 class usuarioController
 {
