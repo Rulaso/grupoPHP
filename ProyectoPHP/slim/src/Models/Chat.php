@@ -60,4 +60,11 @@ class Chat{
         }
     }
 
+    public static function obtenerHistorial($chatID, $quantity, $offset, $db){
+        $mensajes = $db->query("SELECT id, texto, created_at AS fecha_creacion, enviado_por
+        FROM mensaje WHERE chat_id = $chatID ORDER BY created_at DESC, id DESC
+        LIMIT $quantity OFFSET $offset")->fetchAll(PDO::FETCH_ASSOC);  //OFFSET es para saltarme ciertos chats, y empezar a mostrarme desde ese numero de chat.
+        return array_reverse($mensajes);  //Uso array_reverse ya que en order by selecciono los mas recientes primero y despues me pide que los muestre desde el mas antiguo al nuevo.
+    }
+
 }
