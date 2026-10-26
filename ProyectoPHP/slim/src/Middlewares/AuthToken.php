@@ -27,11 +27,7 @@ class AuthToken{
             }
         } catch (PDOException $e){
              return ResponseJson::dbError($response, $e);
-        } finally {
-            if($db != null){
-                DB::closeConnection($db);
-            }
-        }   
+        } 
     }
 
     //funcion encargada de verificar la fecha de expiracion del token
