@@ -105,6 +105,7 @@ class ChatController{
             if(isset($datos['nombre'])){
                 $nombre = trim($datos['nombre']);
                 if (!preg_match('/^[a-zA-Z0-9]{3,15}$/', $nombre)){
+                    DB::closeConnection($db);
                     return ResponseJson::json($response,400,
                     ["status" => "Bad Request",
                     "nombre" => "El nombre solo puede contener letras, numeros y espacios, entre 3 y 15 caracteres"]);
@@ -113,6 +114,7 @@ class ChatController{
             if(isset($datos['descripcion'])){
                 $descripcion = trim ($datos['descripcion']);
                 if (!preg_match('/^[a-zA-Z0-9]{20,40}$/', $descripcion)){
+                    DB::closeConnection($db);
                     return ResponseJson::json($response,400,
                     ["status" => "Bad Request",
                     "descripcion" => "El nombre solo puede contener letras, numeros y espacios, entre 20 y 40 caracteres"]);
@@ -121,6 +123,7 @@ class ChatController{
             if(isset($datos['color'])){
                 $color = trim ($datos['color']);
                 if (!preg_match('/^#[a-fA-F0-9]{6}$/', $color)){
+                    DB::closeConnection($db);
                     return ResponseJson::json($response,400,
                     ["status" => "Bad Request",
                     "color" => "El color debe ser un código hexadecimal"]);  
@@ -129,6 +132,7 @@ class ChatController{
             if (isset($datos['esta_bloqueado'])) {
                 $esta_bloqueado = $datos['esta_bloqueado'];
                 if (!is_bool($esta_bloqueado)) {
+                    DB::closeConnection($db);
                     return ResponseJson::json($response, 400, [
                     "status" => "Bad Request",
                     "esta_bloqueado" => "Debe ser true o false"]);
@@ -194,6 +198,7 @@ class ChatController{
             "quantity" => "La cantidad debe ser un entero positivo"]);
         }
         if ($quantity > 10) {
+            DB::closeConnection($db);
             return ResponseJson::json($response, 400, [
             "status" => "Bad Request",
             "quantity" => "La cantidad máxima es 10"]);
@@ -203,6 +208,7 @@ class ChatController{
         $offset = $params['offset'] ?? 0;
 
         if(!is_numeric($offset) || $offset < 0){
+            DB::closeConnection($db);
             return ResponseJson::json($response, 400, [
             "status" => "Bad Request",
             "offset" => "El offset debe ser un entero positivo"]);
