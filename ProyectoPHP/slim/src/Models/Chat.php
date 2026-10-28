@@ -6,7 +6,6 @@ class Chat{
         return $db->query("SELECT id,  usuario_id, esta_bloqueado FROM chat WHERE creado_por = $userID")->fetch(PDO::FETCH_ASSOC);
     }
 
-    //crea un nuevo chat
     public static function crearChat($userID, $creadorID, $db){
 
     }
@@ -23,8 +22,6 @@ class Chat{
         ORDER BY m2.created_at DESC, m2.id DESC LIMIT 1)
         WHERE c.creado_por = '$userID' OR c.usuario_id = '$userID'
         ORDER BY m.created_at IS NULL ASC, m.created_at DESC")->fetchAll(PDO::FETCH_ASSOC); 
-        //IS NULL me da 1 si es nulo, por eso ordeno asc, asi tengo los no nulos arribo, y cuando tengo
-        //los no nulos, los acomodo por cuando se crearon.
         return $datos;
     }
 
@@ -32,7 +29,6 @@ class Chat{
         $id = $db->query("SELECT id FROM chat
         WHERE (creado_por = $myID AND usuario_id = $user_id) OR
         (creado_por = $user_id AND usuario_id = $myID)")->fetch(PDO::FETCH_ASSOC);
-        
         if($id){
             return $id['id'];
         }
@@ -61,7 +57,7 @@ class Chat{
         else{
             $bloqueo = $db->query("SELECT esta_bloqueado FROM chat WHERE id = $chatID");
             if($bloqueo){
-                return false; // Solo devuelvo false como un error para decir que no se puede desbloquear
+                return false;
             }
             return true;
         }
@@ -70,8 +66,8 @@ class Chat{
     public static function obtenerHistorial($chatID, $quantity, $offset, $db){
         $mensajes = $db->query("SELECT id, texto, created_at AS fecha_creacion, enviado_por
         FROM mensaje WHERE chat_id = $chatID ORDER BY created_at DESC, id DESC
-        LIMIT $quantity OFFSET $offset")->fetchAll(PDO::FETCH_ASSOC);  //OFFSET es para saltarme ciertos chats, y empezar a mostrarme desde ese numero de chat.
-        return array_reverse($mensajes);  //Uso array_reverse ya que en order by selecciono los mas recientes primero y despues me pide que los muestre desde el mas antiguo al nuevo.
+        LIMIT $quantity OFFSET $offset")->fetchAll(PDO::FETCH_ASSOC);  
+        return array_reverse($mensajes);  
     }
 
 }

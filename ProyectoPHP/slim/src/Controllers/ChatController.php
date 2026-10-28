@@ -203,17 +203,14 @@ class ChatController{
             "status" => "Bad Request",
             "quantity" => "La cantidad máxima es 10"]);
         }
-
-        $params = $request->getQueryParams();  //Obtengo los parametros que vienen despues de ? en la URL
+        $params = $request->getQueryParams(); 
         $offset = $params['offset'] ?? 0;
-
         if(!is_numeric($offset) || $offset < 0){
             DB::closeConnection($db);
             return ResponseJson::json($response, 400, [
             "status" => "Bad Request",
             "offset" => "El offset debe ser un entero positivo"]);
         }
-
         $myID = $request->getAttribute('userID');
         try{
             $chatID = Chat::obtenerIdChat($myID, $user_id, $db);

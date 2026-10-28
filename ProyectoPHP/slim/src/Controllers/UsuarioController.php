@@ -120,7 +120,6 @@ class usuarioController
     }
 
 
-
     public function getUsuarios(Request $request, Response $response, array $args)
     {
         $db = $request->getAttribute('db');
