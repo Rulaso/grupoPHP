@@ -10,33 +10,26 @@ class usuarioController
 {
     public function create(Request $request, Response $response)
     {
-        //Recibo los datos del body en $datos
         $datos = $request->getParsedBody();
-
         $username = trim($datos['username'] ?? '');
         $password = $datos['password'] ?? '';
         $nombre = trim($datos['nombre'] ?? '');
 
-        //Validaciones
-        //^ significa primero; {} significa minimo y maximo 
         if(empty($username) || !preg_match('/^@[a-zA-Z0-9]{5,12}$/', $username) ){
             return ResponseJson::json($response, 400, 
             ["status" => "Bad Request", 
             "username" => "El username debe empezar con @, permitiendo solo letras y numeros, entre 5-12 caracteres"]);         
         }
-        //?=.* significa al menos; \d significa 0-9; \W_ significa caracter especial
         else if(empty($password) || !preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,15}$/', $password)){
             return ResponseJson::json($response,400,
             ["status" => "Bad Request",
             "password" => "La contraseña debe contener 1 minuscula, 1 mayuscula, 1 numero y un caracter especial, entre 8-15 caracteres"]);
         }
-        // /u es para que acepte tildes y Ñ
         else if(empty($nombre) || !preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]{2,50}$/u', $nombre)){
             return ResponseJson::json($response,400,
             ["status" => "Bad Request",
             "nombre" => "El nombre solo puede contener letras y espacios, entre 2 y 50 caracteres"]);
         }
-        //Valido username no usado
         else{
             try {
                 $db = DB::getConnection();
@@ -46,8 +39,6 @@ class usuarioController
                     ["status" => "Bad request", 
                     "username" => "El username ya se encuentra en uso"]);
                 }
-
-                // Creo usuario
                 Usuario::crearUsuario($username, $password, $nombre, $db);
                 return ResponseJson::json($response,200,
                 ["status" => "OK", 
@@ -83,8 +74,8 @@ class usuarioController
         $datos = Usuario::buscarUsuarios($userID, $esAdmin, $username, $orden, $limite, $offset, $db);
         return ResponseJson::json($response, 200,['Status'=>'OK','Message'=> $datos]);
     }*/
-    public function listarUsuarios(Request $request, Response $response){
-    // Recupero toda la informacion
+    public function listarUsuarios(Request $request, Response $response)
+    {
         $userID = $request->getAttribute('userID');
         $db = $request->getAttribute('db');
         $queryParams = $request->getQueryParams();
@@ -95,19 +86,16 @@ class usuarioController
         $esAdmin = false;
         
         try{
-            // Verifico que el usuario este logueado y si es admin
             if($userID != null){
                 $esAdmin = Usuario::esAdmin($userID, $db);
             }
 
-            // Valido el orden
             if(strtolower($orden) != 'asc' && strtolower($orden) != 'desc'){
                 return ResponseJson::json($response, 400, [
                 "status" => "Bad Request",
                 "order" => "El orden debe ser asc o desc"]);
             }
 
-            // Valido limit y offset
             if(($limite !== null && (!ctype_digit((string)$limite) || (int)$limite < 1))
                 || !ctype_digit((string)$offset)){
                 return ResponseJson::json($response, 400, [
@@ -115,7 +103,6 @@ class usuarioController
                 "message" => "Limit debe ser positivo y offset no puede ser negativo"]);
             }
 
-            // Busco los usuarios
             $datos = Usuario::buscarUsuarios($userID,$esAdmin,$username,$orden,$limite,$offset,$db);
             return ResponseJson::json($response, 200, [
                 "status" => "OK",
@@ -137,9 +124,7 @@ class usuarioController
     public function getUsuarios(Request $request, Response $response, array $args)
     {
         $db = $request->getAttribute('db');
-        //Recupero el id que viene por url
         $userId = $args['user_id'];
-        //Confirmo que sea un numero
         if(!is_numeric($userId)){
             DB::closeConnection($db);
             return ResponseJson::json($response,400,
@@ -169,12 +154,10 @@ class usuarioController
             }           
         }
     }
-    public function editarUsuario(Request $request, Response $response, array $args)
-    {
+    public function editarUsuario(Request $request, Response $response, array $args){
         $db = $request->getAttribute('db');
-        //Recupero el id que viene por url
         $userId = $args['user_id'];
-        //Confirmo que sea un numero
+
         if(!is_numeric($userId)){
             DB::closeConnection($db);
             return ResponseJson::json($response,400,
@@ -186,7 +169,7 @@ class usuarioController
             $datos = $request->getParsedBody();
             try{
                 if (Usuario::esAdmin($id, $db) || $id == $userId){
-                    //Validar nombre
+
                     if (isset($datos['nombre'])) {
                         $nombre = trim($datos['nombre']);
                         if (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]{2,50}$/u', $nombre)) {
@@ -196,7 +179,6 @@ class usuarioController
                         }
                     }
 
-                    //Validar password
                     if (isset($datos['password'])) {
                         $password = $datos['password'];
                         if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,15}$/', $password)) {
@@ -206,7 +188,6 @@ class usuarioController
                         }
                     }
 
-                    //Validar es_publico
                     if (isset($datos['es_publico'])) {
                         $esPublico = $datos['es_publico'];
                         if ($esPublico != 0 && $esPublico != 1) {
@@ -215,7 +196,7 @@ class usuarioController
                             "es_publico" => "es_publico debe ser 0 o 1"]);
                         }
                     }
-                    //Actualizo
+                    
                     if (isset($datos['nombre'])) {
                         Usuario::editarNombre($userId, $nombre, $db);
                     }
@@ -248,9 +229,7 @@ class usuarioController
     public function eliminarUsuario(Request $request, Response $response, array $args)
     {
         $db = $request->getAttribute('db');
-        //Recupero el id que viene por url
         $userId = $args['user_id'];
-        //Confirmo que sea un numero
         if(!is_numeric($userId)){
             DB::closeConnection($db);
             return ResponseJson::json($response,400,

@@ -36,54 +36,41 @@ class Usuario{
 
     public static function eliminarUsuario($id, $db, $response){
         $db->beginTransaction();
-        // Transaction sirve para tratar todas las operaciones como una sola,puediendo volver todo atras si alguna falla
         try{
-            //Elimino mensajes
             $db->query("DELETE FROM mensaje WHERE enviado_por = $id");
-            //Elimino chats
             $db->query("DELETE FROM chat WHERE creado_por = $id OR usuario_id = $id");
-            //Elimino usuario
             $db->query("DELETE FROM usuario WHERE id = $id");
-            
-            //OK
             $db->commit();
         }
         catch (PDOException $e){
-            //Fallo = deshacer todo
             $db->rollBack();
             return ResponseJson::dbError($response, $e);
         }
     }
 
-    //recupero la contraseña de la db
     public static function obtenerContraseña($username, $db){
         $datos = $db->query("SELECT password FROM usuario WHERE username = '$username'")->fetch(PDO::FETCH_ASSOC);
         return $datos;
     }
 
-    //le asigno un token y una fecha de expiracion a un usuario logueado
     public static function asignarToken($username, $token, $tokenExpired, $db){
         $db->query("UPDATE usuario SET token = '$token', token_expired_at = '$tokenExpired' WHERE username = '$username'");
     }
-
 
     public static function obtenerTokenExpired($token, $db){
         $datos = $db->query("SELECT id, token_expired_at FROM usuario WHERE token = '$token'")->fetch(PDO::FETCH_ASSOC);
         return $datos;
     }
 
-    //Reestablesco la duracion del token en 5 minutos
     public static function actualizarToken($id, $db){
         $tokenExpire = date('Y-m-d H:i:s', strtotime('+5 minutes'));
         $db->query("UPDATE usuario SET token_expired_at = '$tokenExpire' WHERE id = '$id'");
     }
 
-    //Borro el token y su tiempo de expiracion de la base de datos
-        public static function borrarToken($id, $db){
+    public static function borrarToken($id, $db){
         $db->query("UPDATE usuario SET token = NULL, token_expired_at = NULL WHERE id = '$id'");
     }
 
-    //recibo un token y devuelvo el id del usuario y si el mismo es admin
     public static function obtenerUsuarioPorToken($token, $db){
         $datos = $db->query("SELECT id, is_admin FROM usuario WHERE token = '$token'");
         return $datos->fetch(PDO::FETCH_ASSOC);
