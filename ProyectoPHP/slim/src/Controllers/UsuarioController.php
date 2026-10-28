@@ -22,7 +22,7 @@ class usuarioController
         if(empty($username) || !preg_match('/^@[a-zA-Z0-9]{5,12}$/', $username) ){
             return ResponseJson::json($response, 400, 
             ["status" => "Bad Request", 
-            "username" => "El username debe empezar con @, permitiendo solo letras y numeros, entre 4-11 caracteres"]);         
+            "username" => "El username debe empezar con @, permitiendo solo letras y numeros, entre 5-12 caracteres"]);         
         }
         //?=.* significa al menos; \d significa 0-9; \W_ significa caracter especial
         else if(empty($password) || !preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,15}$/', $password)){
@@ -41,8 +41,7 @@ class usuarioController
             try {
                 $db = DB::getConnection();
                 $resultado = Usuario::obtenerUsuario($username, $db);
-                $dato = $resultado->fetchAll(PDO::FETCH_ASSOC);
-                if($dato){
+                if($resultado){
                     return ResponseJson::json($response,400,
                     ["status" => "Bad request", 
                     "username" => "El username ya se encuentra en uso"]);
@@ -211,7 +210,7 @@ class usuarioController
             $id = $request->getAttribute('userID');
             try{
                 if (Usuario::esAdmin($id, $db)){
-                    Usuario::eliminarUsuario($id,$db,$response);
+                    Usuario::eliminarUsuario($userId,$db,$response);
                     return ResponseJson::json($response,200,
                     ["status" => "OK",
                     "message" => "Usuario eliminado"]);
