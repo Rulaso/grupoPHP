@@ -21,6 +21,7 @@ $app->get('/chats', [ChatController::class, 'listarChats'])->add(new AuthToken()
 $app->put('/chats/{user_id}', [ChatController::class, 'modificarChat'])->add(new AuthToken());
 
 $app->get('/chats/{user_id}/historia/{quantity}', [ChatController::class, 'obtenerHistorial'])->add(new AuthToken());
+$app->get('/chats/{user_id}/historia', [ChatController::class, 'obtenerHistorial'])->add(new AuthToken());
 
 $app->post('/usuarios', [UsuarioController::class, 'create']);
 
