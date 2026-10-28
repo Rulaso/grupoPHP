@@ -12,7 +12,7 @@ $app->post('/logout', [Autenticacion::class, 'logout'])->add(new AuthToken());
 
 $app->get('/usuarios', [UsuarioController::class, 'listarUsuarios'])->add(new AuthOpcionalToken());
 
-$app->delete('/mensajes', [MensajeController::class, 'delete'])->add(new AuthToken());
+$app->delete('/mensajes/{message_id}', [MensajeController::class, 'delete'])->add(new AuthToken());
 
 $app->post('/chats/{user_id}', [ChatController::class, 'crearChat'])->add(new AuthToken());
 

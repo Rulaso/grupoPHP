@@ -55,25 +55,6 @@ class usuarioController
         }
     }
 
-    //busca usuarios segun parametros dados
-    /*public function listarUsuarios(Request $request, Response $response){
-        //recupero toda la informacion
-        $userID = $request->getAttribute('useriD');
-        $db = $request->getAttribute('db');
-        $queryParams = $request->getQueryParams();
-        $username = $queryParams['search'] ?? null;
-        $orden = $queryParams['order'] ?? null;
-        $limite = $queryParams['limit'] ?? null;
-        $offset = $queryParams['offset'] ?? null;
-        $esAdmin = null;
-        //verifico que el usuario sea admin
-        if($userID !=null){
-            $esAdmin = Usuario::esAdmin($userID, $db);
-        } 
-        //hago la consulta a la base de datos y retorno los resultados
-        $datos = Usuario::buscarUsuarios($userID, $esAdmin, $username, $orden, $limite, $offset, $db);
-        return ResponseJson::json($response, 200,['Status'=>'OK','Message'=> $datos]);
-    }*/
     public function listarUsuarios(Request $request, Response $response)
     {
         $userID = $request->getAttribute('userID');

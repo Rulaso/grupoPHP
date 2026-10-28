@@ -8,17 +8,11 @@ class AuthOpcionalToken{
         $db = null;
         
         try {
-            //Abro la coneccion a la base de datos
             $db = DB::getConnection();
-
-            //recupero el token desde el header
             $authHeader = $request->getHeaderLine("Authorization");
             $token = trim(str_replace("Bearer", '', $authHeader));
            
-            //Llamo a la funcion esta logueado
             $id = self::estaLogueado($token, $db);
-            //Si el usuario envio un token valido en userID va a ir el id del usuario, si el usuario envio un token invalido o no envio token
-            //en userID va a ir null representando que es un invitado, en db siempre viaja la referencia a la base de datos
             return $handler->handle($request->withAttribute('userID', $id)->withAttribute('db', $db));
             
         } catch (PDOException $e){
@@ -31,9 +25,7 @@ class AuthOpcionalToken{
         }   
     }
 
-    //funcion encargada de verificar la fecha de expiracion del token
     public static function estaLogueado($token, $db){
-        //Verifico si el token existe en la db, y traigo el id de ese token.
         $datos = Usuario::obtenerTokenExpired($token, $db);
 
         if(!$datos){
@@ -42,7 +34,7 @@ class AuthOpcionalToken{
         $id = $datos['id'];
         $tokenExpire = $datos['token_expired_at'];
         $tiempoActual = date('Y-m-d H:i:s');
-        //Si todavia no expiro..
+
         if($tokenExpire > $tiempoActual){
             Usuario::actualizarToken($id, $db);
             return $id;

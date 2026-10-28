@@ -30,7 +30,7 @@ class Autenticacion{
                     $fecha->modify('+5 minutes');
                     $tokenExpired = $fecha->format('Y-m-d H:i:s');
                     Usuario::asignarToken($username, $token, $tokenExpired, $db);
-                    return ResponseJson::json($response, 200,['Status' => 'OK', 'Message' => 'Sesion iniciada, el token es ' . $token]);
+                    return ResponseJson::json($response, 200,['Status' => 'OK', 'Message' => 'Sesion iniciada']);
                 }else {
                     return ResponseJson::json($response, 400,['Status' => 'Bad request', 'password' => 'La contraseña ingresada no coincide para el usuario ']);
                 }

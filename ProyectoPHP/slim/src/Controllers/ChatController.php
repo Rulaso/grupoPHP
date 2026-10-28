@@ -9,52 +9,6 @@ require_once __DIR__ . '/../Models/Chat.php';
 require_once __DIR__ . '/../Models/Usuario.php';
 
 class ChatController{
-
-/*
-    public function crearChat(Request $request, Response $response){
-        $userID = $request->getAttribute('userID');
-        $db = $request->getAttribute('db');
-        $queryParams = $request->getQueryParams();
-        $enviadoID = $queryParams['user_id'];
-        $mensaje = $request->getParsedBody();
-
-        if(!$mensaje || strlen($mensaje) > 255){
-            return ResponseJson::json($response, 400, ['Status'=>'Bad request', 'mensaje'=>'El mensaje se encuentra vacio o supera el limite de carcteres(255)']);
-        }
-        try{
-            $chat = Chat::buscarChat($userID, $db);
-            $enviado = Usuario::obtenerUsuarioPorId($enviadoID, $db);
-            if(!$enviado){
-                return ResponseJson::json($response, 400, ['Status'=>'400', 'user_id'=>'El usuario ingresado no existe']);
-            }
-
-            if(!$chat){
-                Chat::crearChat($enviadoID, $userID, $enviado['username'], $db);
-                Mensaje::subirMensaje($mensaje, $userID, $chat['id'], $db);
-                return ResponseJson::json($response, 200, ['Status'=> 'OK', 'Message'=>'Se creo el chat y se envio el mensaje']);
-            }
-            if($chat['esta_bloquado']){
-                return ResponseJson::json($response, 400, ['Status'=>'Bad request', 'esta_bloqueado'=>'Se encuentra bloqueado en este chat, no puede enviar mensajes aqui']);
-            }
-            $cantMensajes = Mensaje::contarMensajes($chat['id'], $db);
-            if($cantMensajes == 1){
-                
-                    if($chat['usuario_id'] == Mensaje::buscarCreador($chat['chatID'], $db)){
-                        return ResponseJson::json($response, 400,['Status'=>'Bad request','user_id'=>'No puedes enviar mensajes en este chat hasta que te respondan']);
-                    }
-
-            } else {
-                Mensaje::subirMensaje($mensaje, $userID, $chat['id'], $db);
-                return ResponseJson::json($response, 200, ['Status'=>'OK', 'Message'=>'Se envio el mensaje']);
-            }
-        } catch(PDOException $e){
-            return ResponseJson::dbError($response,$e);
-        } finally {
-            DB::closeConnection($db);
-        }
-
-    }
-*/
     public function crearChat(Request $request, Response $response, array $args)
     {
         $userID = $request->getAttribute('userID');

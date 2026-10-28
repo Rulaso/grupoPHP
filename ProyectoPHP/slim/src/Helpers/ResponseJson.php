@@ -19,8 +19,6 @@ class ResponseJson{
                 $mensaje = "Error con la base de datos";
                 break;
         }
-
-        // Reutilizo el método json
         return self::json($response, 500, [
             "status" => "Internal Server Error",
             "db" => $mensaje
