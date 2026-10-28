@@ -3,7 +3,7 @@ require_once __DIR__ . '/../Helpers/ResponseJson.php';
 
 class Usuario{
     public static function obtenerUsuario($usuario, $db){
-        $datos = $db->query("SELECT username FROM usuario WHERE username = '$usuario'")->fetch(PDO::FETCH_ASSOC);
+        $datos = $db->query("SELECT username FROM usuario WHERE id = '$usuario'")->fetch(PDO::FETCH_ASSOC);
         return $datos;
     }
 

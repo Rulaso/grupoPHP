@@ -6,9 +6,10 @@ class Chat{
         return $db->query("SELECT id,  usuario_id, esta_bloqueado FROM chat WHERE creado_por = $userID")->fetch(PDO::FETCH_ASSOC);
     }
 
-    public static function crearChat($userID, $creadorID, $db){
-
+    public static function crearChat($userID, $creadorID, $nombreUser, $db){
+        $db->query("INSERT INTO chat(creado_por, usuario_id, nombre VALUES ($creadorID, $userID, $nombreUser");
     }
+    
     public static function obtenerChats($userID, $db){
         $datos = $db->query("SELECT c.id, c.nombre, c.descripción, c.esta_bloqueado, 
         c.creado_por, c.usuario_id,    

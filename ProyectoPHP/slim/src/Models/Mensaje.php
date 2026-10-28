@@ -19,7 +19,7 @@ class Mensaje{
 
     //devuelve el id del emisario del primer mensaje donde el chatID ingresado sea igual al chatID cargado en la db
     //devuelve el creador id del crador del chat
-    public static function buscarCreador($userID, $chat_id, $db){
-
+    public static function buscarCreador($chat_id, $db){
+        return $db->query("SELECT enviado_por FROM mensaje WHERE chat_id = $chat_id ORDER BY created_at LIMIT 1")->fetch(PDO::FETCH_ASSOC);
     }
 }

@@ -27,3 +27,5 @@ $app->get('/usuarios/{user_id}', [UsuarioController::class, 'getUsuarios'])->add
 $app->put('/usuarios/{user_id}', [UsuarioController::class, 'editarUsuario'])->add(new AuthToken());
 
 $app->delete('/usuarios/{user_id}', [UsuarioController::class, 'eliminarUsuario'])->add(new AuthToken());
+
+$app->post('/chats/{user_id}', [ChatController::class, 'buscarChat'])->add(new AuthToken());
