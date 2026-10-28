@@ -6,9 +6,11 @@ require_once __DIR__ . '/../Helpers/ResponseJson.php';
 require_once __DIR__ . '/../Models/DB.php';
 require_once __DIR__ . '/../Models/Mensaje.php';
 require_once __DIR__ . '/../Models/Chat.php';
+require_once __DIR__ . '/../Models/Usuario.php';
 
 class ChatController{
 
+/*
     public function crearChat(Request $request, Response $response){
         $userID = $request->getAttribute('userID');
         $db = $request->getAttribute('db');
@@ -21,7 +23,7 @@ class ChatController{
         }
         try{
             $chat = Chat::buscarChat($userID, $db);
-            $enviado = Usuario::obtenerUsuario($userID, $db);
+            $enviado = Usuario::obtenerUsuarioPorId($enviadoID, $db);
             if(!$enviado){
                 return ResponseJson::json($response, 400, ['Status'=>'400', 'user_id'=>'El usuario ingresado no existe']);
             }
@@ -52,6 +54,77 @@ class ChatController{
         }
 
     }
+*/
+    public function crearChat(Request $request, Response $response, array $args)
+    {
+        $userID = $request->getAttribute('userID');
+        $db = $request->getAttribute('db');
+        $enviadoID = $args['user_id'];
+        $datos = $request->getParsedBody();
+        $mensaje = $datos['mensaje'] ?? '';
+
+        if (!is_numeric($enviadoID)) {
+            return ResponseJson::json($response, 400, [
+            'Status' => 'Bad request',
+            'user_id' => 'El ID debe ser numérico']);
+        }
+        if (empty(trim($mensaje)) || strlen($mensaje) > 255) {
+            return ResponseJson::json($response, 400, [
+            'Status' => 'Bad request',
+            'mensaje' => 'El mensaje se encuentra vacío o supera el límite de 255 caracteres']);
+        }
+        
+        try {
+            $chat = Chat::buscarChat($userID, $enviadoID, $db);
+            $enviado = Usuario::obtenerUsuarioPorID($enviadoID, $db);
+
+            if (!$enviado) {
+                return ResponseJson::json($response, 400, [
+                'Status' => 'Bad request',
+                'user_id' => 'El usuario ingresado no existe']);
+            }
+
+            if (!$chat) {
+                $chatID = Chat::crearChat($userID, $enviadoID, $enviado['nombre'], $db);
+                Mensaje::subirMensaje($mensaje, $userID, $chatID, $db);
+                return ResponseJson::json($response, 201, [
+                'Status' => 'OK',
+                'Message' => 'Se creó el chat y se envió el mensaje']);
+            }
+
+            if ($chat['esta_bloqueado'] == 1) {
+                return ResponseJson::json($response, 400, [
+                'Status' => 'Bad request',
+                'esta_bloqueado' => 'El chat está bloqueado, no se pueden enviar mensajes']);
+            }
+
+            $cantMensajes = Mensaje::contarMensajes($chat['id'], $db);
+
+            if ($cantMensajes == 1) {
+                $primerMensaje = Mensaje::buscarCreador($chat['id'], $db);
+
+                if ($primerMensaje['enviado_por'] == $userID) {
+                    return ResponseJson::json($response, 400, [
+                    'Status' => 'Bad request',
+                    'mensaje' => 'Debes esperar a que el otro usuario responda']);
+                }
+            }
+
+            Mensaje::subirMensaje($mensaje, $userID, $chat['id'], $db);
+            return ResponseJson::json($response, 200, [
+            'Status' => 'OK',
+            'Message' => 'Se envió el mensaje']);
+        } 
+        catch (PDOException $e) {
+            return ResponseJson::dbError($response, $e);
+        }
+        finally{
+            if ($db != null) {
+                DB::closeConnection($db);
+            }
+        }
+    }
+
 
     public function listarChats(Request $request, Response $response){
         $db = $request->getAttribute('db');

@@ -208,8 +208,10 @@ class Usuario{
             'total' => $total];
     }
 
-    public static function obtenerUsuarioPorID($enviadoID, $db){
-        $datos = $db->query("SELECT username FROM usuario WHERE id = $enviadoID")->fetch(PDO::FETCH_ASSOC);
+    public static function obtenerUsuarioPorID($enviadoID, $db)
+    {
+        $datos = $db->query("SELECT id, username, nombre
+        FROM usuario WHERE id = $enviadoID")->fetch(PDO::FETCH_ASSOC);
         return $datos;
     }
 }

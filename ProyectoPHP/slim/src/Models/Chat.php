@@ -2,12 +2,18 @@
 
 require_once __DIR__ . '/../Helpers/ResponseJson.php';
 class Chat{
-    public static function buscarChat($userID, $db){
-        return $db->query("SELECT id,  usuario_id, esta_bloqueado FROM chat WHERE creado_por = $userID")->fetch(PDO::FETCH_ASSOC);
+    public static function buscarChat($userID, $enviadoID, $db){
+        $consulta = $db->query("SELECT id, creado_por, usuario_id, esta_bloqueado
+        FROM chat WHERE (creado_por = $userID AND usuario_id = $enviadoID)
+        OR (creado_por = $enviadoID AND usuario_id = $userID)
+        LIMIT 1");
+        return $consulta->fetch(PDO::FETCH_ASSOC);
     }
 
-    public static function crearChat($userID, $creadorID, $nombreUser, $db){
-        $db->query("INSERT INTO chat(creado_por, usuario_id, nombre VALUES ($creadorID, $userID, $nombreUser");
+    public static function crearChat($creadorID, $userID, $nombreUser, $db){
+        $db->query("INSERT INTO chat (creado_por, usuario_id, nombre, descripcion)
+        VALUES ($creadorID, $userID, '$nombreUser', '')");
+        return $db->lastInsertId();
     }
     
     public static function obtenerChats($userID, $db){

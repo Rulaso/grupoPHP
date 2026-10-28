@@ -14,6 +14,8 @@ $app->get('/usuarios', [UsuarioController::class, 'listarUsuarios'])->add(new Au
 
 $app->delete('/mensajes', [MensajeController::class, 'delete'])->add(new AuthToken());
 
+$app->post('/chats/{user_id}', [ChatController::class, 'crearChat'])->add(new AuthToken());
+
 $app->get('/chats', [ChatController::class, 'listarChats'])->add(new AuthToken());
 
 $app->put('/chats/{user_id}', [ChatController::class, 'modificarChat'])->add(new AuthToken());
@@ -27,5 +29,3 @@ $app->get('/usuarios/{user_id}', [UsuarioController::class, 'getUsuarios'])->add
 $app->put('/usuarios/{user_id}', [UsuarioController::class, 'editarUsuario'])->add(new AuthToken());
 
 $app->delete('/usuarios/{user_id}', [UsuarioController::class, 'eliminarUsuario'])->add(new AuthToken());
-
-$app->post('/chats/{user_id}', [ChatController::class, 'buscarChat'])->add(new AuthToken());
