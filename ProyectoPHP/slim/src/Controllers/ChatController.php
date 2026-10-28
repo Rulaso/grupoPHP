@@ -159,20 +159,20 @@ class ChatController{
 
             if(isset($datos['nombre'])){
                 $nombre = trim($datos['nombre']);
-                if (!preg_match('/^[a-zA-Z0-9]{3,15}$/', $nombre)){
+                if (!preg_match('/^[a-zA-Z0-9 ]{3,15}$/', $nombre)){
                     DB::closeConnection($db);
                     return ResponseJson::json($response,400,
                     ["status" => "Bad Request",
-                    "nombre" => "El nombre solo puede contener letras, numeros y espacios, entre 3 y 15 caracteres"]);
+                    "nombre" => "El nombre solo puede contener letras y números, entre 3 y 15 caracteres"]);
                 }
             }
             if(isset($datos['descripcion'])){
                 $descripcion = trim ($datos['descripcion']);
-                if (!preg_match('/^[a-zA-Z0-9]{20,40}$/', $descripcion)){
+                if (!preg_match('/^[a-zA-Z0-9 ]{20,40}$/', $descripcion)){
                     DB::closeConnection($db);
                     return ResponseJson::json($response,400,
                     ["status" => "Bad Request",
-                    "descripcion" => "El nombre solo puede contener letras, numeros y espacios, entre 20 y 40 caracteres"]);
+                    "descripcion" => "La descripción solo puede contener letras y números, entre 20 y 40 caracteres"]);
                 }
             }
             if(isset($datos['color'])){

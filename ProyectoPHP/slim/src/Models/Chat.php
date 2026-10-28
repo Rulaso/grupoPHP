@@ -17,18 +17,17 @@ class Chat{
     }
     
     public static function obtenerChats($userID, $db){
-        $datos = $db->query("SELECT c.id, c.nombre, c.descripción, c.esta_bloqueado, 
-        c.creado_por, c.usuario_id,    
+        $datos = $db->query("SELECT c.id, c.nombre, c.descripcion, c.esta_bloqueado,
+        c.creado_por, c.usuario_id,
         CASE WHEN c.creado_por = '$userID' THEN u2.nombre ELSE u1.nombre
-        END AS nombre_otro_usuario 
-        FROM chat c
+        END AS nombre_otro_usuario, m.texto AS ultimo_mensaje FROM chat c
         INNER JOIN usuario u1 ON u1.id = c.creado_por
         INNER JOIN usuario u2 ON u2.id = c.usuario_id
-        LEFT JOIN mensaje m ON m.id = 
-        (SELECT m2.id FROM mensaje m2 WHERE m2.chat_id = c.id 
+        LEFT JOIN mensaje m ON m.id =
+        (SELECT m2.id FROM mensaje m2 WHERE m2.chat_id = c.id
         ORDER BY m2.created_at DESC, m2.id DESC LIMIT 1)
         WHERE c.creado_por = '$userID' OR c.usuario_id = '$userID'
-        ORDER BY m.created_at IS NULL ASC, m.created_at DESC")->fetchAll(PDO::FETCH_ASSOC); 
+        ORDER BY m.created_at IS NULL ASC, m.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
         return $datos;
     }
 
@@ -56,18 +55,15 @@ class Chat{
         $db->query("UPDATE chat SET color = '$color' WHERE id = $chatID");
     }
 
-    public static function editarBloqueo($chatID,$db,$esta_bloqueado){
-        if($esta_bloqueado){
-            $db->query("UPDATE chat SET esta_bloqueado = $esta_bloqueado WHERE id = $chatID");
-            return true;
+    public static function editarBloqueo($chatID, $db, $esta_bloqueado){
+        $bloqueo = $db->query("SELECT esta_bloqueado FROM chat WHERE id = $chatID")->fetchColumn();
+        if ($bloqueo == 1 && !$esta_bloqueado) {
+            return false;
         }
-        else{
-            $bloqueo = $db->query("SELECT esta_bloqueado FROM chat WHERE id = $chatID");
-            if($bloqueo){
-                return false;
-            }
-            return true;
+        if ($esta_bloqueado) {
+            $db->query("UPDATE chat SET esta_bloqueado = 1 WHERE id = $chatID");
         }
+        return true;
     }
 
     public static function obtenerHistorial($chatID, $quantity, $offset, $db){
