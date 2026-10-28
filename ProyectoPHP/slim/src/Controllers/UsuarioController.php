@@ -15,7 +15,7 @@ class usuarioController
         $password = $datos['password'] ?? '';
         $nombre = trim($datos['nombre'] ?? '');
 
-        if(empty($username) || !preg_match('/^@[a-zA-Z0-9]{5,12}$/', $username) ){
+        if(empty($username) || !preg_match('/^@[a-zA-Z0-9]{4,11}$/', $username) ){
             return ResponseJson::json($response, 400, 
             ["status" => "Bad Request", 
             "username" => "El username debe empezar con @, permitiendo solo letras y numeros, entre 5-12 caracteres"]);         
