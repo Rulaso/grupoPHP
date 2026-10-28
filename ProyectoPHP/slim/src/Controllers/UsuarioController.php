@@ -65,7 +65,7 @@ class usuarioController
     }
 
     //busca usuarios segun parametros dados
-    public function listarUsuarios(Request $request, Response $response){
+    /*public function listarUsuarios(Request $request, Response $response){
         //recupero toda la informacion
         $userID = $request->getAttribute('useriD');
         $db = $request->getAttribute('db');
@@ -82,7 +82,58 @@ class usuarioController
         //hago la consulta a la base de datos y retorno los resultados
         $datos = Usuario::buscarUsuarios($userID, $esAdmin, $username, $orden, $limite, $offset, $db);
         return ResponseJson::json($response, 200,['Status'=>'OK','Message'=> $datos]);
+    }*/
+    public function listarUsuarios(Request $request, Response $response){
+    // Recupero toda la informacion
+        $userID = $request->getAttribute('userID');
+        $db = $request->getAttribute('db');
+        $queryParams = $request->getQueryParams();
+        $username = $queryParams['search'] ?? null;
+        $orden = $queryParams['order'] ?? 'asc';
+        $limite = $queryParams['limit'] ?? null;
+        $offset = $queryParams['offset'] ?? 0;
+        $esAdmin = false;
+        
+        try{
+            // Verifico que el usuario este logueado y si es admin
+            if($userID != null){
+                $esAdmin = Usuario::esAdmin($userID, $db);
+            }
+
+            // Valido el orden
+            if(strtolower($orden) != 'asc' && strtolower($orden) != 'desc'){
+                return ResponseJson::json($response, 400, [
+                "status" => "Bad Request",
+                "order" => "El orden debe ser asc o desc"]);
+            }
+
+            // Valido limit y offset
+            if(($limite !== null && (!ctype_digit((string)$limite) || (int)$limite < 1))
+                || !ctype_digit((string)$offset)){
+                return ResponseJson::json($response, 400, [
+                "status" => "Bad Request",
+                "message" => "Limit debe ser positivo y offset no puede ser negativo"]);
+            }
+
+            // Busco los usuarios
+            $datos = Usuario::buscarUsuarios($userID,$esAdmin,$username,$orden,$limite,$offset,$db);
+            return ResponseJson::json($response, 200, [
+                "status" => "OK",
+                "total" => $datos['total'],
+                "usuarios" => $datos['usuarios']]);
+        }
+        catch(PDOException $e){
+            return ResponseJson::dbError($response, $e);
+        }
+        finally{
+            if ($db != null) {
+                DB::closeConnection($db);
+            }
+        }    
     }
+
+
+
     public function getUsuarios(Request $request, Response $response, array $args)
     {
         $db = $request->getAttribute('db');
