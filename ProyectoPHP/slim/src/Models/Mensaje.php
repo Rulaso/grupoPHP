@@ -19,8 +19,6 @@ class Mensaje{
         VALUES ($chatID, $creadoID, '$mensaje')");
     }
 
-    //devuelve el id del emisario del primer mensaje donde el chatID ingresado sea igual al chatID cargado en la db
-    //devuelve el creador id del crador del chat
     public static function buscarCreador($chatID, $db){
         return $db->query("SELECT enviado_por FROM mensaje
         WHERE chat_id = $chatID ORDER BY created_at ASC, id ASC

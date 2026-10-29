@@ -76,46 +76,7 @@ class Usuario{
         return $datos->fetch(PDO::FETCH_ASSOC);
     }
 
-    /*public static function buscarUsuarios($userID, $esAdmin, $username, $orden, $limite, $offset, $db){
-    //consulta BASE
-    $consulta = "SELECT u.id, u.nombre, u.es_publico, u.is_admin ";
-
-    if($esAdmin){
-        //Trae los datos pedidos en el caso de que el usuario sea admin
-        $consulta .= ", (SELECT COUNT(*) FROM chat c WHERE c.creado_por = u.id OR c.usuario_id = u.id) AS cantidad_chats";
-    }
-
-    //Sirve para poder armar la consulta dinamica de forma segura
-    $consulta .= " FROM usuario u WHERE 1=1 ";
-
-    if($userID){
-        //Si el usuario esta logueado lo excluye
-        $consulta .= " AND u.id != '$userID' ";
-    } else {
-        //Si el usuario no esta logueado solo busca los publicos
-        $consulta .= " AND u.es_publico = 1 ";
-    }
-
-    if($username){
-        //Los % en el LIKE son para buscar parcialemnte 
-        $consulta .= " AND (u.username LIKE '%$username%' OR u.nombre LIKE '%$username%') ";
-    }
-
-    $consulta .= " ORDER BY u.username ";
-
-    //Se pasa a minusculas para normalizarlo y luego se verifica el tipo de orden
-    if ($orden && strtolower($orden) == 'desc') {
-        $consulta .= " DESC ";
-    } else {
-        $consulta .= " ASC ";
-    }
-
-    $datos = $db->query($consulta)->fetchAll(PDO::FETCH_ASSOC);
-    return $datos;
-        
-    }*/
     public static function buscarUsuarios($userID, $esAdmin, $username, $orden, $limite, $offset, $db){
-    // Consulta base
         $consulta = "SELECT u.id, u.nombre, u.es_publico, u.is_admin ";
 
         if($esAdmin){
@@ -124,45 +85,34 @@ class Usuario{
         }
 
         $consulta .= " FROM usuario u WHERE 1=1 ";
-        // Parametros para la consulta
         $parametros = [];
         if($userID != null){
-            // Si esta logueado, excluyo al propio usuario
             $consulta .= " AND u.id != :userID ";
             $parametros['userID'] = $userID;
         }    
         else {
-        // Sin usuario autenticado, solo perfiles publicos
             $consulta .= " AND u.es_publico = 1 ";
         }
         if($username !== null && $username !== ''){
-            // Busqueda parcial por username o nombre
             $consulta .= " AND (u.username LIKE :search1 OR u.nombre LIKE :search2) ";
             $parametros['search1'] = '%' . $username . '%';
             $parametros['search2'] = '%' . $username . '%';
         }
 
-        // Orden ascendente o descendente por username
         $orden = strtolower($orden) == 'desc' ? 'DESC' : 'ASC';
         $consulta .= " ORDER BY u.username " . $orden;
-
-        // Preparo y ejecuto la consulta de usuarios
         $sentencia = $db->prepare($consulta);
 
         foreach($parametros as $clave => $valor){
             $sentencia->bindValue(':' . $clave, $valor);
         }
 
-        // Aplico limit y offset si corresponde
         if($limite !== null){
             $consulta .= " LIMIT :limite OFFSET :offset ";
         } 
         elseif((int)$offset > 0){
-            // MySQL permite offset sin un limite practico
             $consulta .= " LIMIT 18446744073709551615 OFFSET :offset ";
         }
-
-        // Preparo de nuevo la consulta incluyendo la paginacion
         $sentencia = $db->prepare($consulta);
 
         foreach($parametros as $clave => $valor){
@@ -179,8 +129,6 @@ class Usuario{
 
         $sentencia->execute();
         $datos = $sentencia->fetchAll(PDO::FETCH_ASSOC);
-
-        // Consulta para calcular el total sin limit ni offset
         $consultaTotal = "SELECT COUNT(*) FROM usuario u WHERE 1=1 ";
 
         if($userID != null){
